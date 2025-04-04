@@ -1,3 +1,4 @@
+import { Metadata } from "next"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -18,14 +19,19 @@ import { ContatosTable } from "./components/contatos-table"
 import { ContatosProvider } from "@/contexts/contatos-context"
 import { ContatosActions } from "./components/contatos-actions"
 
-export default function Page() {
+export const metadata: Metadata = {
+  title: "Contatos | Meu App",
+  description: "Gerencie seus contatos de forma simples e eficiente"
+}
+
+export default function ContatosPage() {
   return (
     <ContatosProvider>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
+        <SidebarInset className="flex flex-col">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
               <Separator
                 orientation="vertical"
@@ -44,14 +50,14 @@ export default function Page() {
               </Breadcrumb>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="flex flex-col gap-4">
+          <main className="flex-1 overflow-auto">
+            <div className="flex flex-col gap-4 p-4">
               <ContatosActions />
               <div className="rounded-lg border bg-card p-6">
                 <ContatosTable />
               </div>
             </div>
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </ContatosProvider>

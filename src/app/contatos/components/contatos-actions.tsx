@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useContatos } from "@/contexts/contatos-context"
 import { Button } from "@/components/ui/button"
 import { 
@@ -20,6 +20,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog"
 import { TagSelector } from "./tag-selector"
+import { toast } from "sonner"
 
 export function ContatosActions() {
   const { 
@@ -38,93 +39,132 @@ export function ContatosActions() {
   const [isTagSelectionType, setIsTagSelectionType] = useState<'add' | 'remove'>('add')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
 
-  // Função para atualizar os dados
-  const handleRefresh = async () => {
+  // Função para atualizar os dados - usando useCallback para evitar re-renders desnecessários
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return
+
     setIsRefreshing(true)
-    await refreshData()
-    setIsRefreshing(false)
-  }
+    try {
+      await refreshData()
+      toast.success("Dados atualizados com sucesso")
+    } catch (error) {
+      toast.error("Erro ao atualizar os dados")
+      console.error("Erro ao atualizar:", error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [isRefreshing, refreshData])
 
   // Função para confirmar exclusão de contatos
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
+    if (isDeleting) return
+
     setIsDeleting(true)
-    await deleteSelectedContatos()
-    setIsDeleting(false)
-    setIsDeleteDialogOpen(false)
-  }
+    try {
+      await deleteSelectedContatos()
+      setIsDeleteDialogOpen(false)
+      toast.success(`${selectedContatos.length} contato(s) excluído(s)`)
+    } catch (error) {
+      toast.error("Erro ao excluir contatos")
+      console.error("Erro ao excluir:", error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [isDeleting, deleteSelectedContatos, selectedContatos.length])
 
   // Função para abrir o diálogo de tags (adicionar ou remover)
-  const handleTagsDialog = (type: 'add' | 'remove') => {
+  const handleTagsDialog = useCallback((type: 'add' | 'remove') => {
     setIsTagSelectionType(type)
     setSelectedTagIds([])
     setIsTagDialogOpen(true)
-  }
+  }, [])
 
   // Função para confirmar a operação de tags
-  const handleTagsConfirm = async () => {
-    if (isTagSelectionType === 'add') {
-      await addTagsToSelectedContatos(selectedTagIds)
-    } else {
-      await removeTagsFromSelectedContatos(selectedTagIds)
+  const handleTagsConfirm = useCallback(async () => {
+    if (selectedTagIds.length === 0) return
+
+    try {
+      if (isTagSelectionType === 'add') {
+        await addTagsToSelectedContatos(selectedTagIds)
+        toast.success("Tags adicionadas com sucesso")
+      } else {
+        await removeTagsFromSelectedContatos(selectedTagIds)
+        toast.success("Tags removidas com sucesso")
+      }
+      setIsTagDialogOpen(false)
+    } catch (error) {
+      toast.error(`Erro ao ${isTagSelectionType === 'add' ? 'adicionar' : 'remover'} tags`)
+      console.error("Erro ao gerenciar tags:", error)
     }
-    setIsTagDialogOpen(false)
-  }
+  }, [
+    selectedTagIds, 
+    isTagSelectionType, 
+    addTagsToSelectedContatos, 
+    removeTagsFromSelectedContatos
+  ])
+
+  // Componente otimizado para botões de ação
+  const ActionsButtons = () => (
+    <div className="flex items-center space-x-2">
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+      >
+        <RefreshCw 
+          className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+        />
+        {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+      </Button>
+      
+      <Button size="sm">
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Novo Contato
+      </Button>
+    </div>
+  )
+
+  // Componente otimizado para botões de seleção
+  const SelectionButtons = () => (
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-muted-foreground">
+        {selectedContatos.length} selecionado(s)
+      </span>
+
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => handleTagsDialog('add')}
+      >
+        <Tag className="mr-2 h-4 w-4" />
+        Adicionar Tags
+      </Button>
+
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => handleTagsDialog('remove')}
+      >
+        <Tag className="mr-2 h-4 w-4" />
+        Remover Tags
+      </Button>
+
+      <Button 
+        variant="destructive" 
+        size="sm"
+        onClick={() => setIsDeleteDialogOpen(true)}
+      >
+        <Trash2 className="mr-2 h-4 w-4" />
+        Excluir
+      </Button>
+    </div>
+  )
 
   return (
     <div className="mb-4 flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw 
-            className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
-          />
-          {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-        </Button>
-        
-        <Button size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Contato
-        </Button>
-      </div>
-
-      {selectedContatos.length > 0 && (
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
-            {selectedContatos.length} selecionado(s)
-          </span>
-
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleTagsDialog('add')}
-          >
-            <Tag className="mr-2 h-4 w-4" />
-            Adicionar Tags
-          </Button>
-
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleTagsDialog('remove')}
-          >
-            <Tag className="mr-2 h-4 w-4" />
-            Remover Tags
-          </Button>
-
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Excluir
-          </Button>
-        </div>
-      )}
+      <ActionsButtons />
+      {selectedContatos.length > 0 && <SelectionButtons />}
 
       {/* Diálogo de confirmação de exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

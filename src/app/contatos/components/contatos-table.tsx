@@ -10,12 +10,10 @@ export function ContatosTable() {
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
+      <div className="space-y-3" aria-busy="true" aria-label="Carregando contatos">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton key={index} className="h-8 w-full" />
+        ))}
       </div>
     )
   }
@@ -26,6 +24,7 @@ export function ContatosTable() {
       data={contatos}
       searchField="nome"
       searchPlaceholder="Buscar contatos..."
+      emptyMessage="Nenhum contato encontrado"
     />
   )
 } 

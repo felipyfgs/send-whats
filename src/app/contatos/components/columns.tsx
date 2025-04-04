@@ -1,7 +1,8 @@
 "use client"
 
+import { useCallback } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Phone, Mail, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { useContatos } from "@/contexts/contatos-context"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 // Definição do tipo de dados para tags
 export type Tag = {
@@ -33,6 +34,113 @@ export type Contato = {
   tags: Tag[]
 }
 
+// Componente para as células com ações do contato
+function ActionsCell({ contato }: { contato: Contato }) {
+  const { deleteContato, setSelectedContatos } = useContatos()
+
+  const handleDelete = useCallback(async () => {
+    try {
+      await deleteContato(contato.id)
+      toast.success(`O contato ${contato.nome} foi excluído com sucesso`)
+    } catch (error) {
+      toast.error("Não foi possível excluir o contato")
+      console.error("Erro ao excluir contato:", error)
+    }
+  }, [contato.id, contato.nome, deleteContato])
+
+  const handleEdit = useCallback(() => {
+    // Implementação futura da edição
+    toast(`Edição do contato ${contato.nome} será implementada em breve`)
+  }, [contato.nome])
+
+  const handleManageTags = useCallback(() => {
+    // Seleciona apenas este contato para gerenciar tags
+    setSelectedContatos([contato.id])
+    // Implementação futura da gestão de tags individual
+    toast(`Use os botões de ação acima para gerenciar as tags de ${contato.nome}`)
+  }, [contato.id, contato.nome, setSelectedContatos])
+
+  const copyToClipboard = useCallback((text: string, message: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success(message)
+  }, [])
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Abrir menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() => copyToClipboard(
+            contato.id, 
+            "ID do contato copiado para a área de transferência"
+          )}
+        >
+          Copiar ID
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleEdit}>
+          Editar contato
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => copyToClipboard(
+            contato.email,
+            "Email copiado para a área de transferência"
+          )}
+        >
+          Copiar email
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => copyToClipboard(
+            contato.telefone,
+            "Telefone copiado para a área de transferência"
+          )}
+        >
+          Copiar telefone
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          Ver detalhes
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleManageTags}>
+          Gerenciar tags
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={handleDelete}
+          className="text-destructive"
+        >
+          Excluir contato
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// Componente para a célula de tags
+function TagsCell({ tags }: { tags: Tag[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {tags.length > 0 ? (
+        tags.map((tag) => (
+          <Badge 
+            key={tag.id} 
+            style={{ backgroundColor: tag.cor }}
+            className="text-white"
+          >
+            {tag.nome}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-muted-foreground text-sm">Sem tags</span>
+      )}
+    </div>
+  )
+}
+
+// Definição das colunas
 export const columns: ColumnDef<Contato>[] = [
   {
     id: "select",
@@ -58,38 +166,49 @@ export const columns: ColumnDef<Contato>[] = [
   },
   {
     accessorKey: "nome",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nome
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => <div>{row.getValue("nome")}</div>,
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Nome
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center">
+        <User className="mr-2 h-4 w-4 text-muted-foreground" />
+        <span>{row.getValue("nome")}</span>
+      </div>
+    ),
   },
   {
     accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Email
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center lowercase">
+        <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+        <span>{row.getValue("email")}</span>
+      </div>
+    ),
   },
   {
     accessorKey: "telefone",
     header: "Telefone",
-    cell: ({ row }) => <div>{row.getValue("telefone")}</div>,
+    cell: ({ row }) => (
+      <div className="flex items-center">
+        <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+        <span>{row.getValue("telefone")}</span>
+      </div>
+    ),
   },
   {
     accessorKey: "categoria",
@@ -103,108 +222,12 @@ export const columns: ColumnDef<Contato>[] = [
     header: "Tags",
     cell: ({ row }) => {
       const tags = row.original.tags || []
-      
-      return (
-        <div className="flex flex-wrap gap-1">
-          {tags.length > 0 ? (
-            tags.map((tag) => (
-              <Badge 
-                key={tag.id} 
-                style={{ backgroundColor: tag.cor }}
-                className="text-white"
-              >
-                {tag.nome}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-muted-foreground text-sm">Sem tags</span>
-          )}
-        </div>
-      )
+      return <TagsCell tags={tags} />
     },
   },
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => {
-      const contato = row.original
-      const { deleteContato, selectContato, setSelectedContatos } = useContatos()
-      const { showToast } = useToast()
-
-      const handleDelete = async () => {
-        try {
-          await deleteContato(contato.id)
-          showToast({
-            title: "Contato excluído",
-            description: `O contato ${contato.nome} foi excluído com sucesso.`,
-          })
-        } catch (error) {
-          showToast({
-            title: "Erro ao excluir",
-            description: "Não foi possível excluir o contato. Tente novamente.",
-            variant: "destructive",
-          })
-        }
-      }
-
-      const handleEdit = () => {
-        // Implementação futura da edição
-        showToast({
-          title: "Edição de contato",
-          description: `Edição do contato ${contato.nome} será implementada em breve.`,
-        })
-      }
-
-      const handleManageTags = () => {
-        // Seleciona apenas este contato para gerenciar tags
-        setSelectedContatos([contato.id])
-        // Implementação futura da gestão de tags individual
-        showToast({
-          title: "Gerenciar tags",
-          description: `Use os botões de ação acima para gerenciar as tags de ${contato.nome}.`,
-        })
-      }
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Abrir menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => {
-                navigator.clipboard.writeText(contato.id)
-                showToast({
-                  title: "ID copiado",
-                  description: "ID do contato copiado para a área de transferência.",
-                })
-              }}
-            >
-              Copiar ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleEdit}>
-              Editar contato
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Ver detalhes
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleManageTags}>
-              Gerenciar tags
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={handleDelete}
-              className="text-destructive"
-            >
-              Excluir contato
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ({ row }) => <ActionsCell contato={row.original} />,
   },
 ] 
