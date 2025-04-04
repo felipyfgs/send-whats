@@ -178,9 +178,9 @@ export function TagManager() {
   const [assignedTagIds, setAssignedTagIds] = useState<string[]>([])
   const [unassignedTagIds, setUnassignedTagIds] = useState<string[]>([])
   const [showTagForm, setShowTagForm] = useState(false)
-  const [showTagListForm, setShowTagListForm] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [saving, setSaving] = useState(false)
+  const [partialTagIds, setPartialTagIds] = useState<string[]>([])
   
   // Obter todas as tags dos contatos selecionados
   const selectedContatosData = useMemo(() => {
@@ -218,8 +218,6 @@ export function TagManager() {
     // Guardar as tags parciais para referência visual
     setPartialTagIds(partialTags.map(tag => tag.id))
   }, [selectedContatosData, tags])
-  
-  const [partialTagIds, setPartialTagIds] = useState<string[]>([])
   
   const filteredTags = useMemo(() => {
     if (!searchTerm) return tags
@@ -336,90 +334,33 @@ export function TagManager() {
     }
   }
   
-  // Exibir um formulário de gerenciamento de tags se não houver contatos selecionados
-  const TagList = () => {
-    if (tags.length === 0) {
-      return (
-        <div className="text-center text-muted-foreground py-8">
-          <TagIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p>Nenhuma tag criada ainda</p>
-          <Button 
-            onClick={() => {
-              setEditingTag(null)
-              setShowTagForm(true)
-            }}
-            variant="outline"
-            className="mt-4"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Criar primeira tag
-          </Button>
-        </div>
-      )
-    }
-    
-    // Nova implementação usando TagTable
-    return (
-      <div className="space-y-3">
-        <TagTable />
-      </div>
-    )
-  }
-  
-  if (selectedContatos.length === 0 && showTagListForm) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciar Tags</CardTitle>
-          <CardDescription>
-            Crie, edite ou exclua tags do sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TagList />
-        </CardContent>
-        <CardFooter className="justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setShowTagListForm(false)}
-          >
-            Voltar
-          </Button>
-          <Button 
-            onClick={() => {
-              setEditingTag(null)
-              setShowTagForm(true)
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Tag
-          </Button>
-        </CardFooter>
-      </Card>
-    )
-  }
-  
+  // Renderizar o componente apropriado com base no estado atual
   if (selectedContatos.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Gerenciar Tags</CardTitle>
           <CardDescription>
-            Selecione um ou mais contatos para gerenciar suas tags ou gerencie todas as tags do sistema
+            Gerencie todas as tags do sistema
           </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-center items-center py-12">
-          <div className="text-center text-muted-foreground">
-            <TagIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
-            <p>Nenhum contato selecionado</p>
+          <div className="flex justify-end mt-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setEditingTag(null)
+                setShowTagForm(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Tag
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={() => setShowTagListForm(true)}
-          >
-            Gerenciar todas as tags
-          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <TagTable />
+          </div>
         </CardContent>
       </Card>
     )
@@ -438,14 +379,6 @@ export function TagManager() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTagListForm(true)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Gerenciar Tags
-            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -567,10 +500,12 @@ export function TagManager() {
         <Button
           variant="outline"
           onClick={() => {
-            setShowTagListForm(false)
+            // Se houver uma função para fechar o diálogo de fora, use-a
+            const event = new CustomEvent('closeTagManagerDialog');
+            window.dispatchEvent(event);
           }}
         >
-          Cancelar
+          Fechar
         </Button>
         <Button 
           onClick={handleSave}

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { TagManager } from "./tag-manager"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface TagManagerDialogProps {
   children?: React.ReactNode
@@ -20,6 +20,18 @@ interface TagManagerDialogProps {
 
 export function TagManagerDialog({ children, trigger }: TagManagerDialogProps) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const handleCloseDialog = () => {
+      setOpen(false)
+    }
+
+    window.addEventListener('closeTagManagerDialog', handleCloseDialog)
+    
+    return () => {
+      window.removeEventListener('closeTagManagerDialog', handleCloseDialog)
+    }
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

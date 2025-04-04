@@ -49,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { TagFormDialog } from "./tag-form-dialog"
 
 export function TagTable() {
   const { tags, updateTag, deleteTag } = useContatos()
@@ -57,6 +58,8 @@ export function TagTable() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [showDeleteAlert, setShowDeleteAlert] = React.useState(false)
+  const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
+  const [showTagForm, setShowTagForm] = React.useState(false)
 
   // Definição das colunas da tabela
   const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
@@ -144,9 +147,8 @@ export function TagTable() {
   ], [])
 
   const handleEditTag = React.useCallback((tag: Tag) => {
-    // Esta função será implementada pelo componente pai
-    // que abrirá o diálogo de edição
-    toast.info(`Editar tag: ${tag.nome}`)
+    setEditingTag(tag)
+    setShowTagForm(true)
   }, [])
 
   const handleDeleteSingleTag = React.useCallback(async (id: string) => {
@@ -392,6 +394,28 @@ export function TagTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog para editar tags */}
+      {showTagForm && (
+        <TagFormDialog
+          tag={editingTag}
+          onSave={(tagData) => {
+            if (editingTag) {
+              updateTag({
+                id: editingTag.id,
+                ...tagData
+              }).then(() => {
+                toast.success("Tag atualizada com sucesso")
+              }).catch((error) => {
+                console.error("Erro ao atualizar tag:", error)
+                toast.error("Erro ao atualizar a tag")
+              })
+            }
+            setShowTagForm(false)
+            setEditingTag(null)
+          }}
+        />
+      )}
     </>
   )
 } 
