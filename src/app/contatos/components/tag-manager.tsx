@@ -23,53 +23,141 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { SearchIcon, TagIcon, Plus, X, Save } from "lucide-react"
+import { 
+  SearchIcon, 
+  TagIcon, 
+  Plus, 
+  X, 
+  Save, 
+  Pencil, 
+  Trash2, 
+  Settings, 
+  AlertTriangle
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TagFormDialog } from "./tag-form-dialog"
 import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface TagItemProps {
   tag: Tag
   isAssigned: boolean
   isPartial?: boolean
   onToggle: (tagId: string, assigned: boolean) => void
+  onEdit?: (tag: Tag) => void
+  onDelete?: (tagId: string) => void
+  allowManage?: boolean
 }
 
-function TagItem({ tag, isAssigned, isPartial = false, onToggle }: TagItemProps) {
+function TagItem({ 
+  tag, 
+  isAssigned, 
+  isPartial = false, 
+  onToggle,
+  onEdit,
+  onDelete,
+  allowManage = false
+}: TagItemProps) {
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false)
+
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 p-3 rounded-md border border-transparent transition-all hover:bg-muted/20",
-        isAssigned && "bg-muted/30",
-        isPartial && "border-dashed border-muted-foreground/30"
-      )}
-    >
-      <Checkbox
-        id={`tag-${tag.id}`}
-        checked={isAssigned}
-        onCheckedChange={(checked) => onToggle(tag.id, checked as boolean)}
-      />
-      <Badge
-        style={{ backgroundColor: tag.cor }}
-        className="text-white px-3 py-1"
+    <>
+      <div
+        className={cn(
+          "flex items-center gap-2 p-3 rounded-md border border-transparent transition-all hover:bg-muted/20",
+          isAssigned && "bg-muted/30",
+          isPartial && "border-dashed border-muted-foreground/30"
+        )}
       >
-        {tag.nome}
-      </Badge>
-      <span className={cn(
-        "text-sm ml-auto",
-        isPartial 
-          ? "text-amber-500 dark:text-amber-400" 
-          : isAssigned 
-            ? "text-green-600 dark:text-green-500" 
-            : "text-muted-foreground"
-      )}>
-        {isAssigned 
-          ? isPartial 
-            ? "Parcialmente atribuída" 
-            : "Atribuída a todos" 
-          : "Não atribuída"}
-      </span>
-    </div>
+        <Checkbox
+          id={`tag-${tag.id}`}
+          checked={isAssigned}
+          onCheckedChange={(checked) => onToggle(tag.id, checked as boolean)}
+        />
+        <Badge
+          style={{ backgroundColor: tag.cor }}
+          className="text-white px-3 py-1"
+        >
+          {tag.nome}
+        </Badge>
+        <span className={cn(
+          "text-sm ml-auto",
+          isPartial 
+            ? "text-amber-500 dark:text-amber-400" 
+            : isAssigned 
+              ? "text-green-600 dark:text-green-500" 
+              : "text-muted-foreground"
+        )}>
+          {isAssigned 
+            ? isPartial 
+              ? "Parcialmente atribuída" 
+              : "Atribuída a todos" 
+            : "Não atribuída"}
+        </span>
+        
+        {allowManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit?.(tag)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteAlert(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A tag "{tag.nome}" será removida
+              permanentemente e desvinculada de todos os contatos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                onDelete?.(tag.id)
+                setShowDeleteAlert(false)
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -79,13 +167,18 @@ export function TagManager() {
     contatos, 
     selectedContatos, 
     addTagsToSelectedContatos, 
-    removeTagsFromSelectedContatos
+    removeTagsFromSelectedContatos,
+    createTag,
+    updateTag,
+    deleteTag
   } = useContatos()
   
   const [searchTerm, setSearchTerm] = useState("")
   const [assignedTagIds, setAssignedTagIds] = useState<string[]>([])
   const [unassignedTagIds, setUnassignedTagIds] = useState<string[]>([])
   const [showTagForm, setShowTagForm] = useState(false)
+  const [showTagListForm, setShowTagListForm] = useState(false)
+  const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [saving, setSaving] = useState(false)
   
   // Obter todas as tags dos contatos selecionados
@@ -227,20 +320,138 @@ export function TagManager() {
     }
   }
   
+  const handleEditTag = (tag: Tag) => {
+    setEditingTag(tag)
+    setShowTagForm(true)
+  }
+  
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      await deleteTag(tagId)
+      toast.success("Tag excluída com sucesso")
+    } catch (error) {
+      console.error("Erro ao excluir tag:", error)
+      toast.error("Erro ao excluir a tag")
+    }
+  }
+  
+  // Exibir um formulário de gerenciamento de tags se não houver contatos selecionados
+  const TagList = () => {
+    if (tags.length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-8">
+          <TagIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
+          <p>Nenhuma tag criada ainda</p>
+          <Button 
+            onClick={() => {
+              setEditingTag(null)
+              setShowTagForm(true)
+            }}
+            variant="outline"
+            className="mt-4"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Criar primeira tag
+          </Button>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="space-y-3">
+        <div className="relative mb-4">
+          <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar tags..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-4"
+          />
+          {searchTerm && (
+            <button
+              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+              onClick={() => setSearchTerm("")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        
+        {filteredTags.length > 0 ? (
+          filteredTags.map(tag => (
+            <TagItem
+              key={tag.id}
+              tag={tag}
+              isAssigned={false}
+              onToggle={() => {}}
+              onEdit={handleEditTag}
+              onDelete={handleDeleteTag}
+              allowManage={true}
+            />
+          ))
+        ) : (
+          <div className="text-center py-6 text-muted-foreground">
+            <p>Nenhuma tag encontrada com este termo</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+  
+  if (selectedContatos.length === 0 && showTagListForm) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Gerenciar Tags</CardTitle>
+          <CardDescription>
+            Crie, edite ou exclua tags do sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TagList />
+        </CardContent>
+        <CardFooter className="justify-between">
+          <Button
+            variant="outline"
+            onClick={() => setShowTagListForm(false)}
+          >
+            Voltar
+          </Button>
+          <Button 
+            onClick={() => {
+              setEditingTag(null)
+              setShowTagForm(true)
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Tag
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+  
   if (selectedContatos.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Gerenciar Tags</CardTitle>
           <CardDescription>
-            Selecione um ou mais contatos para gerenciar suas tags
+            Selecione um ou mais contatos para gerenciar suas tags ou gerencie todas as tags do sistema
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center items-center py-12">
+        <CardContent className="flex flex-col justify-center items-center py-12">
           <div className="text-center text-muted-foreground">
             <TagIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
             <p>Nenhum contato selecionado</p>
           </div>
+          <Button
+            variant="outline"
+            className="mt-6"
+            onClick={() => setShowTagListForm(true)}
+          >
+            Gerenciar todas as tags
+          </Button>
         </CardContent>
       </Card>
     )
@@ -258,16 +469,30 @@ export function TagManager() {
                 : `Gerenciando tags para ${selectedContatos.length} contatos`}
             </CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowTagForm(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Tag
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTagListForm(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Gerenciar Tags
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setEditingTag(null)
+                setShowTagForm(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Tag
+            </Button>
+          </div>
         </div>
       </CardHeader>
+      
       <CardContent>
         <div className="space-y-4">
           {selectedContatos.length > 1 && (
@@ -300,59 +525,112 @@ export function TagManager() {
             )}
           </div>
           
-          {filteredTags.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <TagIcon className="h-10 w-10 text-muted-foreground opacity-20 mb-2" />
-              <p className="text-muted-foreground">Nenhuma tag encontrada</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1 rounded-md">
-              {filteredTags.map(tag => (
-                <TagItem 
-                  key={tag.id}
-                  tag={tag}
-                  isAssigned={assignedTagIds.includes(tag.id)}
-                  isPartial={partialTagIds.includes(tag.id)}
-                  onToggle={handleTagToggle}
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-1 max-h-[calc(80vh-280px)] overflow-y-auto pr-1">
+            {filteredTags.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhuma tag encontrada com este termo</p>
+              </div>
+            ) : (
+              <>
+                {/* Tags atribuídas a todos os contatos */}
+                {assignedTagIds.length > 0 && (
+                  <div className="space-y-1">
+                    {filteredTags
+                      .filter(tag => assignedTagIds.includes(tag.id))
+                      .map(tag => (
+                        <TagItem
+                          key={tag.id}
+                          tag={tag}
+                          isAssigned={true}
+                          onToggle={handleTagToggle}
+                          onEdit={handleEditTag}
+                          onDelete={handleDeleteTag}
+                          allowManage={true}
+                        />
+                      ))}
+                  </div>
+                )}
+                
+                {/* Tags parcialmente atribuídas */}
+                {partialTagIds.length > 0 && (
+                  <div className="space-y-1 mt-3">
+                    {filteredTags
+                      .filter(tag => partialTagIds.includes(tag.id))
+                      .map(tag => (
+                        <TagItem
+                          key={tag.id}
+                          tag={tag}
+                          isAssigned={false}
+                          isPartial={true}
+                          onToggle={handleTagToggle}
+                          onEdit={handleEditTag}
+                          onDelete={handleDeleteTag}
+                          allowManage={true}
+                        />
+                      ))}
+                  </div>
+                )}
+                
+                {/* Tags não atribuídas */}
+                {unassignedTagIds.length > 0 && (
+                  <div className="space-y-1 mt-3">
+                    {filteredTags
+                      .filter(tag => unassignedTagIds.includes(tag.id))
+                      .map(tag => (
+                        <TagItem
+                          key={tag.id}
+                          tag={tag}
+                          isAssigned={false}
+                          onToggle={handleTagToggle}
+                          onEdit={handleEditTag}
+                          onDelete={handleDeleteTag}
+                          allowManage={true}
+                        />
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" disabled={saving}>
+      
+      <CardFooter className="justify-between">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setShowTagListForm(false)
+          }}
+        >
           Cancelar
         </Button>
         <Button 
           onClick={handleSave}
-          disabled={saving || (assignedTagIds.length === 0 && unassignedTagIds.length === 0)}
+          disabled={saving}
         >
-          {saving ? (
-            <>Salvando...</>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Alterações
-            </>
-          )}
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? "Salvando..." : "Salvar Alterações"}
         </Button>
       </CardFooter>
       
+      {/* Diálogo para criar/editar tag */}
       {showTagForm && (
         <TagFormDialog
-          onSave={() => {
+          tag={editingTag}
+          onSave={(tagData) => {
+            if (editingTag) {
+              updateTag({
+                id: editingTag.id,
+                ...tagData
+              })
+            } else {
+              createTag(tagData)
+            }
             setShowTagForm(false)
+            setEditingTag(null)
           }}
         >
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTagForm(false)}
-          >
-            Cancelar
-          </Button>
+          <span></span> {/* Placeholder para evitar problema com o Trigger */}
         </TagFormDialog>
       )}
     </Card>

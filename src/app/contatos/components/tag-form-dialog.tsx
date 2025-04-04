@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   Dialog,
@@ -12,23 +12,36 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ColorPicker } from "@/app/contatos/components/color-picker"
+import { Tag } from "./columns"
 
 interface TagFormDialogProps {
   onSave: (tag: { nome: string, cor: string }) => void
   children?: React.ReactNode
+  tag?: Tag | null
 }
 
-export function TagFormDialog({ onSave, children }: TagFormDialogProps) {
+export function TagFormDialog({ onSave, children, tag = null }: TagFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [nome, setNome] = useState("")
   const [cor, setCor] = useState("#3b82f6")
+  
+  // Preencher os campos se estiver editando uma tag existente
+  useEffect(() => {
+    if (tag) {
+      setNome(tag.nome)
+      setCor(tag.cor)
+    }
+  }, [tag])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave({ nome, cor })
     setOpen(false)
-    setNome("")
-    setCor("#3b82f6")
+    // Resetar os campos apenas se não estiver editando
+    if (!tag) {
+      setNome("")
+      setCor("#3b82f6")
+    }
   }
 
   return (
@@ -38,7 +51,7 @@ export function TagFormDialog({ onSave, children }: TagFormDialogProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar Nova Tag</DialogTitle>
+          <DialogTitle>{tag ? "Editar Tag" : "Criar Nova Tag"}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,7 +78,7 @@ export function TagFormDialog({ onSave, children }: TagFormDialogProps) {
             >
               Cancelar
             </Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit">{tag ? "Atualizar" : "Salvar"}</Button>
           </div>
         </form>
       </DialogContent>
