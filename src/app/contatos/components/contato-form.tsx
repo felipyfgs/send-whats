@@ -58,9 +58,9 @@ interface ContatoFormProps {
 }
 
 export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) {
-  const { createContato, updateContato, tags } = useContatos()
+  const { createContato, updateContato, tags, createTag } = useContatos()
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
-  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false)
+  const [showTagDialog, setShowTagDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const isEditing = !!contato
 
@@ -93,29 +93,29 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         return trimmed === "" ? null : trimmed
       }
 
-      const contatoData: DbContato = {
-        nome: data.nome,
-        telefone: prepareValue(data.telefone),
-        email: prepareValue(data.email),
-        empresa: prepareValue(data.empresa),
-        cargo: prepareValue(data.cargo),
-        observacoes: prepareValue(data.observacoes),
-        status: 'Ativo',
-        categoria: data.categoria
-      }
-
       if (isEditing && contato?.id) {
         await updateContato({
-          ...contatoData,
           id: contato.id,
+          nome: data.nome,
+          telefone: prepareValue(data.telefone),
+          email: prepareValue(data.email),
+          categoria: data.categoria,
           tags: contato.tags || [],
-          categoria: contato.categoria || "outro"
+          empresa: prepareValue(data.empresa),
+          cargo: prepareValue(data.cargo),
+          observacoes: prepareValue(data.observacoes)
         })
         toast.success("Contato atualizado com sucesso")
       } else {
         await createContato({
-          ...contatoData,
-          tags: selectedTagIds.map(tagId => tags.find(tag => tag.id === tagId)!).filter(Boolean)
+          nome: data.nome,
+          telefone: prepareValue(data.telefone),
+          email: prepareValue(data.email),
+          categoria: data.categoria,
+          tags: selectedTagIds.map(tagId => tags.find(tag => tag.id === tagId)!).filter(Boolean),
+          empresa: prepareValue(data.empresa),
+          cargo: prepareValue(data.cargo),
+          observacoes: prepareValue(data.observacoes)
         })
         toast.success("Contato criado com sucesso")
       }
@@ -279,12 +279,14 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         
         <div className="mt-4">
           <FormLabel>Tags</FormLabel>
-          <TagSelectorSimple
-            tags={tags}
-            selectedTagIds={selectedTagIds}
-            onChange={setSelectedTagIds}
-            onCreateTag={() => setIsTagDialogOpen(true)}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <TagSelectorSimple
+              tags={tags}
+              selectedTagIds={selectedTagIds}
+              onChange={setSelectedTagIds}
+              onCreateTag={() => setShowTagDialog(true)}
+            />
+          </div>
         </div>
         
         <div className="flex justify-end space-x-2">
@@ -303,10 +305,23 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         </div>
       </form>
       
-      <TagFormDialog
-        open={isTagDialogOpen}
-        onOpenChange={setIsTagDialogOpen}
-      />
+      {showTagDialog && (
+        <TagFormDialog 
+          onSave={(newTag) => {
+            createTag(newTag);
+            setShowTagDialog(false);
+          }}
+        >
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowTagDialog(false)}
+          >
+            Cancelar
+          </Button>
+        </TagFormDialog>
+      )}
     </Form>
   )
 }
