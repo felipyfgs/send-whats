@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useContatos } from "@/contexts/contatos-context"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -47,10 +48,51 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Filtrar por nome...",
   emptyMessage = "Nenhum resultado encontrado."
 }: DataTableProps<TData, TValue>) {
+  const { selectedContatos, setSelectedContatos } = useContatos()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+
+  // Sincronizar seleção da tabela com o contexto de contatos
+  React.useEffect(() => {
+    // Obter os IDs de contatos das linhas selecionadas
+    const selectedRowIds = Object.keys(rowSelection)
+    
+    if (selectedRowIds.length > 0) {
+      const selectedIds = selectedRowIds.map(
+        (idx) => (data[parseInt(idx)] as any).id
+      )
+      setSelectedContatos(selectedIds)
+    } else {
+      setSelectedContatos([])
+    }
+  }, [rowSelection, data, setSelectedContatos])
+
+  // Sincronizar o contexto de contatos com a seleção da tabela
+  React.useEffect(() => {
+    // Se não há contatos selecionados, limpar a seleção da tabela
+    if (selectedContatos.length === 0 && Object.keys(rowSelection).length > 0) {
+      setRowSelection({})
+      return
+    }
+    
+    // Se temos contatos selecionados mas nenhuma linha selecionada na tabela,
+    // atualizar a seleção da tabela
+    if (selectedContatos.length > 0 && Object.keys(rowSelection).length === 0) {
+      const newRowSelection: Record<number, boolean> = {}
+      
+      data.forEach((item, index) => {
+        if (selectedContatos.includes((item as any).id)) {
+          newRowSelection[index] = true
+        }
+      })
+      
+      if (Object.keys(newRowSelection).length > 0) {
+        setRowSelection(newRowSelection)
+      }
+    }
+  }, [selectedContatos, data, rowSelection, setRowSelection])
 
   const table = useReactTable({
     data,
