@@ -12,8 +12,9 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  Row,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, Trash2, Check, CommandIcon } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -49,19 +50,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TagFormDialog } from "./tag-form-dialog"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { MultiSelect, OptionType } from "./multi-select"
 
 // Extrair o componente de ação de tag para evitar hooks dentro de renderização
 const TagActionCell = React.memo(
@@ -95,105 +84,6 @@ const TagActionCell = React.memo(
 );
 TagActionCell.displayName = "TagActionCell";
 
-// Componente de seleção de tag com Command
-const TagSelectCell = React.memo(
-  ({ row, table }: { row: any; table: any }) => {
-    const [open, setOpen] = React.useState(false)
-    const selected = row.getIsSelected()
-
-    return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`h-8 w-8 p-0 ${selected ? "bg-primary/10" : ""}`}
-          >
-            <CommandIcon className={`h-4 w-4 ${selected ? "text-primary" : "text-muted-foreground"}`} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="p-0" align="start" side="right">
-          <Command>
-            <CommandList>
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    row.toggleSelected(!selected)
-                    setOpen(false)
-                  }}
-                >
-                  {selected ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4 text-primary" />
-                      <span>Desselecionar</span>
-                    </>
-                  ) : (
-                    <>
-                      <CommandIcon className="mr-2 h-4 w-4" />
-                      <span>Selecionar</span>
-                    </>
-                  )}
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-)
-TagSelectCell.displayName = "TagSelectCell"
-
-// Componente para seleção em massa de tags
-const TagSelectAllCell = React.memo(
-  ({ table }: { table: any }) => {
-    const [open, setOpen] = React.useState(false)
-    const isAllSelected = table.getIsAllPageRowsSelected()
-    const isSomeSelected = table.getIsSomePageRowsSelected()
-
-    return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`h-8 w-8 p-0 ${isAllSelected || isSomeSelected ? "bg-primary/10" : ""}`}
-          >
-            <CommandIcon className={`h-4 w-4 ${isAllSelected ? "text-primary" : isSomeSelected ? "text-primary/70" : "text-muted-foreground"}`} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="p-0" align="start" side="bottom">
-          <Command>
-            <CommandList>
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    table.toggleAllPageRowsSelected(!isAllSelected)
-                    setOpen(false)
-                  }}
-                >
-                  {isAllSelected ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4 text-primary" />
-                      <span>Desselecionar tudo</span>
-                    </>
-                  ) : (
-                    <>
-                      <CommandIcon className="mr-2 h-4 w-4" />
-                      <span>Selecionar tudo</span>
-                    </>
-                  )}
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-)
-TagSelectAllCell.displayName = "TagSelectAllCell"
-
 export function TagTable() {
   // 1. Contexto (useContext) - Sempre primeiro
   const { tags, updateTag, deleteTag } = useContatos()
@@ -206,6 +96,7 @@ export function TagTable() {
   const [showDeleteAlert, setShowDeleteAlert] = React.useState(false)
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
+  const [selectedTagIds, setSelectedTagIds] = React.useState<string[]>([])
   
   // 3. Callbacks (useCallback) - Definir antes dos memos que dependem deles
   const handleEditTag = React.useCallback((tag: Tag) => {
@@ -224,35 +115,27 @@ export function TagTable() {
   }, [deleteTag])
 
   const handleDeleteSelectedTags = React.useCallback(async () => {
-    const selectedRows = Object.keys(rowSelection).map(
-      index => tags[parseInt(index)]
-    )
-    
-    if (selectedRows.length === 0) {
+    if (selectedTagIds.length === 0) {
       toast.error("Nenhuma tag selecionada")
       return
     }
     
     setShowDeleteAlert(true)
-  }, [rowSelection, tags])
+  }, [selectedTagIds])
 
   const confirmDeleteSelectedTags = React.useCallback(async () => {
-    const selectedRows = Object.keys(rowSelection).map(
-      index => tags[parseInt(index)]
-    )
-    
     try {
       // Excluir tags em sequência sem notificações individuais
-      const tagsToDelete = [...selectedRows] // Criar uma cópia para não modificar o original
+      const tagsToDelete = [...selectedTagIds] // Criar uma cópia para não modificar o original
       let tagsExcluidas = 0
       
       // Usar Promise.all para executar operações em paralelo para melhor performance
-      const deletePromises = tagsToDelete.map(async (tag) => {
+      const deletePromises = tagsToDelete.map(async (tagId) => {
         try {
-          await deleteTag(tag.id, true) // Passar true para o parâmetro silent
+          await deleteTag(tagId, true) // Passar true para o parâmetro silent
           return true
         } catch (error) {
-          console.error(`Erro ao excluir tag ${tag.id}:`, error)
+          console.error(`Erro ao excluir tag ${tagId}:`, error)
           return false
         }
       })
@@ -268,13 +151,13 @@ export function TagTable() {
         toast.error("Não foi possível excluir as tags selecionadas")
       }
       
-      setRowSelection({})
+      setSelectedTagIds([])
       setShowDeleteAlert(false)
     } catch (error) {
       console.error("Erro ao excluir tags em massa:", error)
       toast.error("Erro ao excluir as tags selecionadas")
     }
-  }, [deleteTag, rowSelection, tags])
+  }, [deleteTag, selectedTagIds])
   
   // Função de manipulação do formulário
   const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
@@ -294,19 +177,17 @@ export function TagTable() {
   }, [editingTag, updateTag])
   
   // 4. Memos (useMemo) - Todos os useMemo juntos
+  // Converter tags para o formato de opções para o multiselect
+  const tagOptions = React.useMemo<OptionType[]>(() => {
+    return tags.map(tag => ({
+      value: tag.id,
+      label: tag.nome,
+      color: tag.cor
+    }))
+  }, [tags])
+  
   // Definição das colunas da tabela
   const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <TagSelectAllCell table={table} />
-      ),
-      cell: ({ row }) => (
-        <TagSelectCell row={row} table={table} />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
     {
       accessorKey: "nome",
       header: ({ column }) => {
@@ -351,25 +232,23 @@ export function TagTable() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
     },
   })
 
   // Valores derivados
-  const filteredSelectedRowCount = React.useMemo(
-    () => table.getFilteredSelectedRowModel().rows.length,
-    [table]
-  )
-  
   const filteredRowCount = React.useMemo(
     () => table.getFilteredRowModel().rows.length,
     [table]
   )
+
+  // Manipulador de seleção de tags
+  const handleTagSelection = React.useCallback((selectedValues: string[]) => {
+    setSelectedTagIds(selectedValues)
+  }, [])
 
   // 5. Renderização
   return (
@@ -388,7 +267,7 @@ export function TagTable() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {filteredSelectedRowCount > 0 && (
+            {selectedTagIds.length > 0 && (
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -400,6 +279,18 @@ export function TagTable() {
             )}
           </div>
         </div>
+        
+        <div className="mb-4">
+          <MultiSelect
+            options={tagOptions}
+            selected={selectedTagIds}
+            onChange={handleTagSelection}
+            placeholder="Selecionar tags..."
+            displayColors={true}
+            maxDisplay={5}
+          />
+        </div>
+        
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -425,7 +316,7 @@ export function TagTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
+                    data-state={selectedTagIds.includes(row.original.id) && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -452,7 +343,7 @@ export function TagTable() {
         </div>
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            {filteredSelectedRowCount} de{" "}
+            {selectedTagIds.length} de{" "}
             {filteredRowCount} tag(s) selecionada(s).
           </div>
           <div className="space-x-2">
@@ -481,7 +372,7 @@ export function TagTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a excluir {filteredSelectedRowCount} tag(s).
+              Você está prestes a excluir {selectedTagIds.length} tag(s).
               Esta ação não pode ser desfeita e as tags serão removidas de todos os contatos.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -506,4 +397,4 @@ export function TagTable() {
       )}
     </>
   )
-} 
+}
