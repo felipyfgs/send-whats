@@ -61,9 +61,9 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
       email: contato?.email || "",
       telefone: contato?.telefone || "",
       categoria: contato?.categoria || "pessoal",
-      empresa: "",
-      cargo: "",
-      observacoes: ""
+      empresa: contato?.empresa || "",
+      cargo: contato?.cargo || "",
+      observacoes: contato?.observacoes || ""
     }
   })
 
@@ -176,6 +176,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
                 <FormLabel>Categoria</FormLabel>
                 <Select
                   onValueChange={field.onChange}
+                  value={field.value}
                   defaultValue={field.value}
                 >
                   <FormControl>
