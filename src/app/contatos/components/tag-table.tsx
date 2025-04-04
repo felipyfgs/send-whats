@@ -13,10 +13,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, Trash2, Check, CommandIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -50,6 +49,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TagFormDialog } from "./tag-form-dialog"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 // Extrair o componente de ação de tag para evitar hooks dentro de renderização
 const TagActionCell = React.memo(
@@ -82,6 +94,105 @@ const TagActionCell = React.memo(
   }
 );
 TagActionCell.displayName = "TagActionCell";
+
+// Componente de seleção de tag com Command
+const TagSelectCell = React.memo(
+  ({ row, table }: { row: any; table: any }) => {
+    const [open, setOpen] = React.useState(false)
+    const selected = row.getIsSelected()
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`h-8 w-8 p-0 ${selected ? "bg-primary/10" : ""}`}
+          >
+            <CommandIcon className={`h-4 w-4 ${selected ? "text-primary" : "text-muted-foreground"}`} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0" align="start" side="right">
+          <Command>
+            <CommandList>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    row.toggleSelected(!selected)
+                    setOpen(false)
+                  }}
+                >
+                  {selected ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4 text-primary" />
+                      <span>Desselecionar</span>
+                    </>
+                  ) : (
+                    <>
+                      <CommandIcon className="mr-2 h-4 w-4" />
+                      <span>Selecionar</span>
+                    </>
+                  )}
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    )
+  }
+)
+TagSelectCell.displayName = "TagSelectCell"
+
+// Componente para seleção em massa de tags
+const TagSelectAllCell = React.memo(
+  ({ table }: { table: any }) => {
+    const [open, setOpen] = React.useState(false)
+    const isAllSelected = table.getIsAllPageRowsSelected()
+    const isSomeSelected = table.getIsSomePageRowsSelected()
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`h-8 w-8 p-0 ${isAllSelected || isSomeSelected ? "bg-primary/10" : ""}`}
+          >
+            <CommandIcon className={`h-4 w-4 ${isAllSelected ? "text-primary" : isSomeSelected ? "text-primary/70" : "text-muted-foreground"}`} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0" align="start" side="bottom">
+          <Command>
+            <CommandList>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    table.toggleAllPageRowsSelected(!isAllSelected)
+                    setOpen(false)
+                  }}
+                >
+                  {isAllSelected ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4 text-primary" />
+                      <span>Desselecionar tudo</span>
+                    </>
+                  ) : (
+                    <>
+                      <CommandIcon className="mr-2 h-4 w-4" />
+                      <span>Selecionar tudo</span>
+                    </>
+                  )}
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    )
+  }
+)
+TagSelectAllCell.displayName = "TagSelectAllCell"
 
 export function TagTable() {
   // 1. Contexto (useContext) - Sempre primeiro
@@ -188,21 +299,10 @@ export function TagTable() {
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-        />
+        <TagSelectAllCell table={table} />
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-        />
+        <TagSelectCell row={row} table={table} />
       ),
       enableSorting: false,
       enableHiding: false,
