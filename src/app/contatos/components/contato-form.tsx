@@ -302,6 +302,11 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           </Button>
         </div>
       </form>
+      
+      <TagFormDialog
+        open={isTagDialogOpen}
+        onOpenChange={setIsTagDialogOpen}
+      />
     </Form>
   )
 }
