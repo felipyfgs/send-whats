@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Tag } from "./columns"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
-import { TagSelectorTable } from "./tag-selector-table"
+import { TagSelector } from "./tag-selector"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -275,9 +275,11 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         <div className="mt-4">
           <FormLabel>Tags</FormLabel>
           <div className="flex flex-wrap items-center gap-2">
-            <TagSelectorTable
+            <TagSelector
+              tags={tags}
               selectedTagIds={selectedTagIds}
               onChange={setSelectedTagIds}
+              variant="simple"
             />
           </div>
         </div>

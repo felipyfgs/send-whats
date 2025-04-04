@@ -1,17 +1,22 @@
 "use client"
 
 import { useState, useCallback, memo } from "react"
-import { Tag } from "../components/columns"
+import { Tag } from "./columns"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckIcon, SearchIcon, TagIcon } from "lucide-react"
+import { CheckIcon, PlusIcon, SearchIcon, TagIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface TagSelectorProps {
   tags: Tag[]
   selectedTagIds: string[]
   onChange: (selectedIds: string[]) => void
+  onCreateTag?: () => void
+  variant?: "list" | "simple" | "badges"
+  maxHeight?: number
+  showFilter?: boolean
 }
 
 // Usando memo para evitar re-renders desnecessários
@@ -51,7 +56,15 @@ const TagItem = memo(({
 
 TagItem.displayName = "TagItem"
 
-export function TagSelector({ tags, selectedTagIds, onChange }: TagSelectorProps) {
+export function TagSelector({ 
+  tags, 
+  selectedTagIds, 
+  onChange, 
+  onCreateTag,
+  variant = "list",
+  maxHeight = 250,
+  showFilter = true
+}: TagSelectorProps) {
   const [filter, setFilter] = useState("")
   
   const filteredTags = tags.filter(tag => 
@@ -70,27 +83,62 @@ export function TagSelector({ tags, selectedTagIds, onChange }: TagSelectorProps
     setFilter("")
   }, [])
 
-  return (
-    <div>
-      <div className="relative mb-4">
-        <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Filtrar tags..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="pl-9 pr-8"
-          aria-label="Filtrar tags"
-        />
-        {filter && (
-          <button 
-            className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-            onClick={handleClearFilter}
-            aria-label="Limpar filtro"
+  // Renderização para o modo de lista simples apenas com badges
+  if (variant === "simple" || variant === "badges") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map(tag => (
+          <Badge
+            key={tag.id}
+            style={{ backgroundColor: tag.cor }}
+            className={cn(
+              "cursor-pointer text-white",
+              !selectedTagIds.includes(tag.id) && "opacity-60"
+            )}
+            onClick={() => handleToggleTag(tag.id)}
           >
-            ×
-          </button>
+            {tag.nome}
+          </Badge>
+        ))}
+        
+        {onCreateTag && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onCreateTag}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Nova Tag
+          </Button>
         )}
       </div>
+    )
+  }
+
+  // Renderização para o modo de lista completa com filtro
+  return (
+    <div>
+      {showFilter && (
+        <div className="relative mb-4">
+          <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Filtrar tags..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="pl-9 pr-8"
+            aria-label="Filtrar tags"
+          />
+          {filter && (
+            <button 
+              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+              onClick={handleClearFilter}
+              aria-label="Limpar filtro"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
       
       {filteredTags.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
@@ -102,7 +150,10 @@ export function TagSelector({ tags, selectedTagIds, onChange }: TagSelectorProps
           )}
         </div>
       ) : (
-        <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+        <div 
+          className="space-y-2 overflow-y-auto pr-2 custom-scrollbar"
+          style={{ maxHeight: `${maxHeight}px` }}
+        >
           {filteredTags.map((tag) => (
             <TagItem
               key={tag.id}
@@ -111,6 +162,19 @@ export function TagSelector({ tags, selectedTagIds, onChange }: TagSelectorProps
               onToggle={() => handleToggleTag(tag.id)}
             />
           ))}
+        </div>
+      )}
+      
+      {onCreateTag && (
+        <div className="mt-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onCreateTag}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Nova Tag
+          </Button>
         </div>
       )}
     </div>
