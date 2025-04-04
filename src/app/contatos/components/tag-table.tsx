@@ -96,7 +96,65 @@ export function TagTable() {
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
   
-  // 3. Callbacks (useCallback) - Todos os callbacks juntos
+  // 3. Memos (useMemo) - Todos os useMemo juntos
+  // Definição das colunas da tabela
+  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Selecionar todas"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Selecionar linha"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "nome",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Nome
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Badge 
+            style={{ backgroundColor: row.original.cor }}
+            className="text-white px-3 py-1"
+          >
+            {row.getValue("nome")}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
+      },
+    },
+  ], [handleEditTag, handleDeleteSingleTag])
+  
+  // 4. Callbacks (useCallback) - Todos os callbacks juntos
   const handleEditTag = React.useCallback((tag: Tag) => {
     setEditingTag(tag)
     setShowTagForm(true)
@@ -165,7 +223,7 @@ export function TagTable() {
     }
   }, [deleteTag, rowSelection, tags])
   
-  // Função de manipulação do formulário - mover para cima com os outros callbacks
+  // Função de manipulação do formulário
   const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
     if (editingTag) {
       updateTag({
@@ -182,66 +240,8 @@ export function TagTable() {
     setEditingTag(null)
   }, [editingTag, updateTag])
 
-  // 4. Memos (useMemo) - Todos os useMemo juntos
-  // Definição das colunas da tabela
-  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Nome
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Badge 
-            style={{ backgroundColor: row.original.cor }}
-            className="text-white px-3 py-1"
-          >
-            {row.getValue("nome")}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
-      },
-    },
-  ], [handleEditTag, handleDeleteSingleTag])
-
   // Configuração da tabela
-  const table = React.useMemo(() => useReactTable({
+  const table = useReactTable({
     data: tags,
     columns,
     onSortingChange: setSorting,
@@ -258,7 +258,7 @@ export function TagTable() {
       columnVisibility,
       rowSelection,
     },
-  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
+  })
 
   // Valores derivados
   const filteredSelectedRowCount = React.useMemo(
