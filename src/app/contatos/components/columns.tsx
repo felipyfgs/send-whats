@@ -12,6 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+
+// Definição do tipo de dados para tags
+export type Tag = {
+  id: string
+  nome: string
+  cor: string
+}
 
 // Definição do tipo de dados para contatos
 export type Contato = {
@@ -20,6 +28,7 @@ export type Contato = {
   email: string
   telefone: string
   categoria: "pessoal" | "trabalho" | "familia" | "outro"
+  tags: Tag[]
 }
 
 export const columns: ColumnDef<Contato>[] = [
@@ -88,6 +97,31 @@ export const columns: ColumnDef<Contato>[] = [
     ),
   },
   {
+    accessorKey: "tags",
+    header: "Tags",
+    cell: ({ row }) => {
+      const tags = row.original.tags || []
+      
+      return (
+        <div className="flex flex-wrap gap-1">
+          {tags.length > 0 ? (
+            tags.map((tag) => (
+              <Badge 
+                key={tag.id} 
+                style={{ backgroundColor: tag.cor }}
+                className="text-white"
+              >
+                {tag.nome}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-muted-foreground text-sm">Sem tags</span>
+          )}
+        </div>
+      )
+    },
+  },
+  {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
@@ -111,6 +145,7 @@ export const columns: ColumnDef<Contato>[] = [
             <DropdownMenuSeparator />
             <DropdownMenuItem>Editar contato</DropdownMenuItem>
             <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
+            <DropdownMenuItem>Gerenciar tags</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">Excluir contato</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
