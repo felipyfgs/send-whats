@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ColorPicker } from "./color-picker"
-import { Tag } from "../contatos/columns"
+import { ColorPicker } from "../ui/color-picker"
+import { Tag } from "../types"
 
 interface TagFormDialogProps {
   onSave: (tag: { nome: string, cor: string }) => void

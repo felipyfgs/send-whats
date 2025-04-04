@@ -1,5 +1,5 @@
 import { createClient } from "./client";
-import { Tag, Contato } from "@/app/contatos/components/columns";
+import { Tag, Contato } from "@/app/contatos/components/types";
 
 // Interfaces para o banco de dados
 export interface DBTag {
@@ -150,10 +150,13 @@ export async function fetchContatos(): Promise<Contato[]> {
     return {
       id: contato.id,
       nome: contato.nome,
-      email: contato.email || "",
-      telefone: contato.telefone || "",
+      email: contato.email,
+      telefone: contato.telefone,
       categoria: contato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
-      tags: contatoTags
+      tags: contatoTags,
+      empresa: null,
+      cargo: null,
+      observacoes: null
     };
   });
 }
@@ -199,7 +202,10 @@ export async function getContato(id: string): Promise<Contato | null> {
       email: contato.email || "",
       telefone: contato.telefone || "",
       categoria: contato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
-      tags: []
+      tags: [],
+      empresa: null,
+      cargo: null,
+      observacoes: null
     };
   }
   
@@ -224,7 +230,10 @@ export async function getContato(id: string): Promise<Contato | null> {
       id: tag.id,
       nome: tag.nome,
       cor: tag.cor
-    }))
+    })),
+    empresa: null,
+    cargo: null,
+    observacoes: null
   };
 }
 
@@ -271,7 +280,10 @@ export async function createContato(contato: Omit<Contato, "id">): Promise<Conta
     email: newContato.email || "",
     telefone: newContato.telefone || "",
     categoria: newContato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
-    tags: contato.tags || []
+    tags: contato.tags || [],
+    empresa: null,
+    cargo: null,
+    observacoes: null
   };
 }
 
@@ -330,7 +342,10 @@ export async function updateContato(contato: Contato): Promise<Contato> {
     email: updatedContato.email || "",
     telefone: updatedContato.telefone || "",
     categoria: updatedContato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
-    tags: contato.tags || []
+    tags: contato.tags || [],
+    empresa: null,
+    cargo: null,
+    observacoes: null
   };
 }
 

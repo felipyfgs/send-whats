@@ -1,4 +1,4 @@
-import { Contato, Tag } from "./columns"
+import { Contato, Tag } from "../types"
 
 // Tags de exemplo
 export const tags: Tag[] = [
@@ -18,7 +18,10 @@ export const contatos: Contato[] = [
     email: "joao.silva@exemplo.com",
     telefone: "(11) 98765-4321",
     categoria: "pessoal",
-    tags: [tags[2], tags[6]] // Importante, VIP
+    tags: [tags[2], tags[6]], // Importante, VIP
+    empresa: null,
+    cargo: null,
+    observacoes: "Contato pessoal importante"
   },
   {
     id: "c2",
@@ -26,7 +29,10 @@ export const contatos: Contato[] = [
     email: "maria@empresa.com.br",
     telefone: "(21) 97654-3210",
     categoria: "trabalho",
-    tags: [tags[0], tags[3]] // Cliente, Parceiro
+    tags: [tags[0], tags[3]], // Cliente, Parceiro
+    empresa: "Empresa ABC",
+    cargo: "Gerente de Projetos",
+    observacoes: null
   },
   {
     id: "c3",
@@ -34,7 +40,10 @@ export const contatos: Contato[] = [
     email: "carlos.santos@exemplo.com",
     telefone: "(31) 96543-2109",
     categoria: "familia",
-    tags: []
+    tags: [],
+    empresa: null,
+    cargo: null,
+    observacoes: "Primo"
   },
   {
     id: "c4",
@@ -42,7 +51,10 @@ export const contatos: Contato[] = [
     email: "ana.costa@empresa.com.br",
     telefone: "(41) 95432-1098",
     categoria: "trabalho",
-    tags: [tags[1]] // Fornecedor
+    tags: [tags[1]], // Fornecedor
+    empresa: "Suprimentos XYZ",
+    cargo: "Diretora Comercial",
+    observacoes: null
   },
   {
     id: "c5",
@@ -50,7 +62,10 @@ export const contatos: Contato[] = [
     email: "pedro.souza@exemplo.com",
     telefone: "(51) 94321-0987",
     categoria: "pessoal",
-    tags: [tags[4]] // Inativo
+    tags: [tags[4]], // Inativo
+    empresa: null,
+    cargo: null,
+    observacoes: "Não responde há meses"
   },
   {
     id: "c6",
@@ -58,7 +73,10 @@ export const contatos: Contato[] = [
     email: "lucia@empresa.com.br",
     telefone: "(61) 93210-9876",
     categoria: "trabalho",
-    tags: [tags[0], tags[3], tags[6]] // Cliente, Parceiro, VIP
+    tags: [tags[0], tags[3], tags[6]], // Cliente, Parceiro, VIP
+    empresa: "Tech Solutions",
+    cargo: "CEO",
+    observacoes: "Cliente prioritário"
   },
   {
     id: "c7",
@@ -66,7 +84,10 @@ export const contatos: Contato[] = [
     email: "roberto@exemplo.com",
     telefone: "(71) 92109-8765",
     categoria: "familia",
-    tags: [tags[5]] // Novo
+    tags: [tags[5]], // Novo
+    empresa: null,
+    cargo: null,
+    observacoes: "Irmão"
   },
   {
     id: "c8",
@@ -74,6 +95,9 @@ export const contatos: Contato[] = [
     email: "fernanda.lima@exemplo.com",
     telefone: "(81) 91098-7654",
     categoria: "outro",
-    tags: [tags[3], tags[5]] // Parceiro, Novo
+    tags: [tags[3], tags[5]], // Parceiro, Novo
+    empresa: "Consultoria Lima",
+    cargo: "Consultora",
+    observacoes: null
   }
 ] 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useContatos } from "@/contexts/contatos-context"
-import { Tag } from "./columns"
+import { Tag } from "../types"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"

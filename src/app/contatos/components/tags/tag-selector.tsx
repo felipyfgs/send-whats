@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, memo } from "react"
-import { Tag } from "../contatos/columns"
+import { Tag } from "../types"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"

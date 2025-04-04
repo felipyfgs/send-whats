@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Contato, Tag } from "@/app/contatos/components/contatos/columns";
+import { Contato, Tag } from "@/app/contatos/components/types";
 import * as db from "@/lib/supabase/database";
 import { useToast } from "@/hooks/use-toast";
 

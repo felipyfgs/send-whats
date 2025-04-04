@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Tag } from "../contatos/columns"
+import { Tag } from "../types"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { TagSelector } from "../tags/tag-selector"
