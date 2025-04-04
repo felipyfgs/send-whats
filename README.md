@@ -1,4 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# App
+
+Aplicação desenvolvida com Next.js, Tailwind CSS e shadcn/ui.
+
+## Características
+
+- Interface moderna com shadcn/ui + Tailwind CSS
+- Framework Next.js para renderização e roteamento
+- Componentes reutilizáveis seguindo as melhores práticas
+
+## Estrutura do Projeto
+
+- `src/app`: Páginas e rotas da aplicação
+- `src/app/*/components`: Componentes específicos das páginas
+- `src/components`: Componentes compartilhados
+- `src/components/ui`: Componentes de UI do shadcn
+
+## Como executar o projeto
+
+```bash
+# Instalar dependências
+npm install
+
+# Executar em modo de desenvolvimento
+npm run dev
+```
 
 ## Getting Started
 
