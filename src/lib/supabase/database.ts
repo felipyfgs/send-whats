@@ -121,7 +121,7 @@ export async function fetchContatos(): Promise<Contato[]> {
   }
   
   // Buscar as relações entre contatos e tags
-  const { data: contatoTags, error: relError } = await supabase
+  const { data, error: relError } = await supabase
     .from("contato_tags")
     .select("*");
   
@@ -130,11 +130,14 @@ export async function fetchContatos(): Promise<Contato[]> {
     throw relError;
   }
   
+  // Garantir que o TypeScript reconheça o tipo correto
+  const relacoes = data as DBContatoTag[];
+  
   // Converter para o formato da aplicação
   return contatos.map((contato: DBContato) => {
-    const contatoTagIds = contatoTags
-      .filter((rel: DBContatoTag) => rel.contato_id === contato.id)
-      .map((rel: DBContatoTag) => rel.tag_id);
+    const contatoTagIds = relacoes
+      .filter(rel => rel.contato_id === contato.id)
+      .map(rel => rel.tag_id);
     
     const contatoTags = tags
       .filter((tag: DBTag) => contatoTagIds.includes(tag.id))
