@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
+import Link from "next/link"
 
 export function LoginForm({
   className,
@@ -31,11 +32,21 @@ export function LoginForm({
     setLoading(true)
     setError(null)
 
+    if (!email || !password) {
+      setError("Por favor, preencha todos os campos")
+      setLoading(false)
+      return
+    }
+
     try {
       const { success, error } = await signIn(email, password)
 
       if (!success && error) {
-        setError(error)
+        setError(
+          error === "Invalid login credentials"
+            ? "Email ou senha incorretos"
+            : error
+        )
         return
       }
       
@@ -78,12 +89,12 @@ export function LoginForm({
               <div className="grid gap-3">
                 <div className="flex items-center">
                   <Label htmlFor="password">Senha</Label>
-                  <a
-                    href="#"
+                  <Link
+                    href="/recuperar-senha"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Esqueceu sua senha?
-                  </a>
+                  </Link>
                 </div>
                 <Input 
                   id="password" 
@@ -108,9 +119,9 @@ export function LoginForm({
             </div>
             <div className="mt-4 text-center text-sm">
               Não tem uma conta?{" "}
-              <a href="#" className="underline underline-offset-4">
+              <Link href="/cadastro" className="underline underline-offset-4">
                 Cadastre-se
-              </a>
+              </Link>
             </div>
           </form>
         </CardContent>

@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
+import type { User, AuthError } from "@supabase/supabase-js";
+
+interface AuthResponse {
+  success: boolean;
+  error?: string;
+}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,32 +46,56 @@ export function useAuth() {
     };
   }, [supabase, router]);
 
-  // Funções de autenticação
-  const signIn = async (email: string, password: string) => {
+  /**
+   * Autenticar usuário com email e senha
+   * @param email Email do usuário
+   * @param password Senha do usuário
+   * @returns Objeto com indicador de sucesso e possível mensagem de erro
+   */
+  const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      
       if (error) throw error;
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const authError = error as AuthError;
+      return { 
+        success: false, 
+        error: authError.message 
+      };
     }
   };
 
-  const signOut = async () => {
+  /**
+   * Finalizar a sessão do usuário atual
+   * @returns Objeto com indicador de sucesso e possível mensagem de erro
+   */
+  const signOut = async (): Promise<AuthResponse> => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       router.push("/login");
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const authError = error as AuthError;
+      return { 
+        success: false, 
+        error: authError.message 
+      };
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  /**
+   * Registrar um novo usuário
+   * @param email Email do usuário
+   * @param password Senha do usuário
+   * @returns Objeto com indicador de sucesso e possível mensagem de erro
+   */
+  const signUp = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -74,8 +103,12 @@ export function useAuth() {
       });
       if (error) throw error;
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const authError = error as AuthError;
+      return { 
+        success: false, 
+        error: authError.message 
+      };
     }
   };
 

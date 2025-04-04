@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Contato, Tag } from "@/app/contatos/components/columns";
+import { Contato, Tag } from "@/app/contatos/components/contatos/columns";
 import * as db from "@/lib/supabase/database";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,6 +49,29 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
   const [selectedContatos, setSelectedContatos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Função auxiliar para lidar com erros
+  const handleError = (error: unknown, message: string, silent = false) => {
+    console.error(`${message}:`, error);
+    if (!silent) {
+      toast({
+        title: "Erro",
+        description: message,
+        variant: "destructive"
+      });
+    }
+    return error;
+  };
+
+  // Função auxiliar para exibir mensagens de sucesso
+  const showSuccess = (message: string, silent = false) => {
+    if (!silent) {
+      toast({
+        title: "Sucesso",
+        description: message
+      });
+    }
+  };
+
   // Carregar dados iniciais
   useEffect(() => {
     refreshData();
@@ -65,12 +88,7 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
       setContatos(contatosData);
       setTags(tagsData);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os dados. Tente novamente mais tarde.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível carregar os dados. Tente novamente mais tarde.");
     } finally {
       setLoading(false);
     }
@@ -81,12 +99,7 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     try {
       return await db.getContato(id);
     } catch (error) {
-      console.error("Erro ao buscar contato:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível buscar os detalhes do contato.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível buscar os detalhes do contato.");
       return null;
     }
   };
@@ -94,58 +107,34 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
   const createContato = async (contato: Omit<Contato, "id">) => {
     try {
       await db.createContato(contato);
-      toast({
-        title: "Sucesso",
-        description: "Contato criado com sucesso!"
-      });
+      showSuccess("Contato criado com sucesso!");
       await refreshData();
     } catch (error) {
-      console.error("Erro ao criar contato:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o contato.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível criar o contato.");
     }
   };
 
   const updateContato = async (contato: Contato) => {
     try {
       await db.updateContato(contato);
-      toast({
-        title: "Sucesso",
-        description: "Contato atualizado com sucesso!"
-      });
+      showSuccess("Contato atualizado com sucesso!");
       await refreshData();
     } catch (error) {
-      console.error("Erro ao atualizar contato:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o contato.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível atualizar o contato.");
     }
   };
 
   const deleteContato = async (id: string) => {
     try {
       await db.deleteContato(id);
-      toast({
-        title: "Sucesso",
-        description: "Contato excluído com sucesso!"
-      });
+      showSuccess("Contato excluído com sucesso!");
       // Remover da seleção se estiver selecionado
       if (selectedContatos.includes(id)) {
         setSelectedContatos(prev => prev.filter(contatoId => contatoId !== id));
       }
       await refreshData();
     } catch (error) {
-      console.error("Erro ao excluir contato:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o contato.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível excluir o contato.");
     }
   };
 
@@ -154,19 +143,11 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     
     try {
       await db.deleteContatos(selectedContatos);
-      toast({
-        title: "Sucesso",
-        description: `${selectedContatos.length} contato(s) excluído(s) com sucesso!`
-      });
+      showSuccess(`${selectedContatos.length} contato(s) excluído(s) com sucesso!`);
       setSelectedContatos([]);
       await refreshData();
     } catch (error) {
-      console.error("Erro ao excluir contatos em massa:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir os contatos selecionados.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível excluir os contatos selecionados.");
     }
   };
 
@@ -174,59 +155,31 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
   const createTag = async (tag: Omit<Tag, "id">) => {
     try {
       await db.createTag(tag);
-      toast({
-        title: "Sucesso",
-        description: "Tag criada com sucesso!"
-      });
+      showSuccess("Tag criada com sucesso!");
       await refreshData();
     } catch (error) {
-      console.error("Erro ao criar tag:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar a tag.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível criar a tag.");
     }
   };
 
   const updateTag = async (tag: Tag) => {
     try {
       await db.updateTag(tag);
-      toast({
-        title: "Sucesso",
-        description: "Tag atualizada com sucesso!"
-      });
+      showSuccess("Tag atualizada com sucesso!");
       await refreshData();
     } catch (error) {
-      console.error("Erro ao atualizar tag:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a tag.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível atualizar a tag.");
     }
   };
 
   const deleteTag = async (id: string, silent = false) => {
     try {
       await db.deleteTag(id);
-      if (!silent) {
-        toast({
-          title: "Sucesso",
-          description: "Tag excluída com sucesso!"
-        });
-      }
+      showSuccess("Tag excluída com sucesso!", silent);
       await refreshData();
     } catch (error) {
-      console.error("Erro ao excluir tag:", error);
-      if (!silent) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível excluir a tag.",
-          variant: "destructive"
-        });
-      }
-      throw error; // Repassar o erro para ser tratado pelo chamador
+      const err = handleError(error, "Não foi possível excluir a tag.", silent);
+      throw err; // Repassar o erro para ser tratado pelo chamador
     }
   };
 
@@ -263,18 +216,10 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     
     try {
       await db.addTagsToContatos(selectedContatos, tagIds);
-      toast({
-        title: "Sucesso",
-        description: `Tags adicionadas a ${selectedContatos.length} contato(s) com sucesso!`
-      });
+      showSuccess(`Tags adicionadas a ${selectedContatos.length} contato(s) com sucesso!`);
       await refreshData();
     } catch (error) {
-      console.error("Erro ao adicionar tags em massa:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível adicionar as tags aos contatos selecionados.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível adicionar as tags aos contatos selecionados.");
     }
   };
 
@@ -283,18 +228,10 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     
     try {
       await db.removeTagsFromContatos(selectedContatos, tagIds);
-      toast({
-        title: "Sucesso",
-        description: `Tags removidas de ${selectedContatos.length} contato(s) com sucesso!`
-      });
+      showSuccess(`Tags removidas de ${selectedContatos.length} contato(s) com sucesso!`);
       await refreshData();
     } catch (error) {
-      console.error("Erro ao remover tags em massa:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover as tags dos contatos selecionados.",
-        variant: "destructive"
-      });
+      handleError(error, "Não foi possível remover as tags dos contatos selecionados.");
     }
   };
 
