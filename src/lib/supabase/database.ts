@@ -177,7 +177,7 @@ export async function getContato(id: string): Promise<Contato | null> {
   }
   
   // Buscar as tags do contato
-  const { data: contatoTags, error: relError } = await supabase
+  const { data, error: relError } = await supabase
     .from("contato_tags")
     .select("tag_id")
     .eq("contato_id", id);
@@ -187,7 +187,10 @@ export async function getContato(id: string): Promise<Contato | null> {
     throw relError;
   }
   
-  const tagIds = contatoTags.map((rel: DBContatoTag) => rel.tag_id);
+  // Usar asserção de tipo para garantir que o TypeScript reconheça a estrutura
+  const contatoTags = data as { tag_id: string }[];
+  
+  const tagIds = contatoTags.map(rel => rel.tag_id);
   
   if (tagIds.length === 0) {
     return {
