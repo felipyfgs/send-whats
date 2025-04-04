@@ -307,16 +307,17 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
             createTag(newTag);
             setShowTagDialog(false);
           }}
-        >
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowTagDialog(false)}
-          >
-            Cancelar
-          </Button>
-        </TagFormDialog>
+          triggerButton={
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowTagDialog(false)}
+            >
+              Cancelar
+            </Button>
+          }
+        />
       )}
     </Form>
   )

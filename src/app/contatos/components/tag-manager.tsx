@@ -597,9 +597,7 @@ export function TagManager() {
             setShowTagForm(false)
             setEditingTag(null)
           }}
-        >
-          <span></span> {/* Placeholder para evitar problema com o Trigger */}
-        </TagFormDialog>
+        />
       )}
     </Card>
   )

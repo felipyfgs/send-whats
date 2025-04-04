@@ -52,44 +52,8 @@ export function TagSelectorTable({ selectedTagIds, onChange, onCreateTag }: TagS
   const [rowSelection, setRowSelection] = React.useState({})
   const [showTagForm, setShowTagForm] = React.useState(false)
 
-  // Sincronizar a seleção do estado externo para a tabela
-  React.useEffect(() => {
-    // Criar objeto de seleção baseado no estado externo
-    const newSelection: Record<number, boolean> = {}
-    
-    tags.forEach((tag, index) => {
-      if (selectedTagIds.includes(tag.id)) {
-        newSelection[index] = true
-      }
-    })
-    
-    setRowSelection(newSelection)
-  }, [selectedTagIds, tags])
-
-  // Sincronizar a seleção da tabela para o estado externo
-  React.useEffect(() => {
-    const selectedRows = Object.keys(rowSelection).map(
-      index => tags[parseInt(index)]
-    ).filter(Boolean)
-    
-    const selectedIds = selectedRows.map(tag => tag.id)
-    
-    // Verificar se há diferença na seleção
-    const currentIds = new Set(selectedTagIds)
-    const newIds = new Set(selectedIds)
-    
-    // Só atualizar se houver diferença
-    if (
-      selectedIds.length !== selectedTagIds.length ||
-      selectedIds.some(id => !currentIds.has(id)) ||
-      selectedTagIds.some(id => !newIds.has(id))
-    ) {
-      onChange(selectedIds)
-    }
-  }, [rowSelection, tags, onChange, selectedTagIds])
-
   // Definição das colunas da tabela
-  const columns: ColumnDef<Tag>[] = [
+  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
     {
       id: "select",
       header: ({ table }) => (
@@ -139,9 +103,49 @@ export function TagSelectorTable({ selectedTagIds, onChange, onCreateTag }: TagS
         </div>
       ),
     },
-  ]
+  ], [])
 
-  const table = useReactTable({
+  // Sincronizar a seleção do estado externo para a tabela de forma otimizada
+  React.useEffect(() => {
+    // Criar objeto de seleção baseado no estado externo
+    const newSelection: Record<number, boolean> = {}
+    const selectedSet = new Set(selectedTagIds)
+    
+    tags.forEach((tag, index) => {
+      if (selectedSet.has(tag.id)) {
+        newSelection[index] = true
+      }
+    })
+    
+    setRowSelection(newSelection)
+  }, [selectedTagIds, tags])
+
+  // Sincronizar a seleção da tabela para o estado externo de forma otimizada
+  React.useEffect(() => {
+    const selectedRows = Object.keys(rowSelection).map(
+      index => tags[parseInt(index)]
+    ).filter(Boolean)
+    
+    const selectedIds = selectedRows.map(tag => tag.id)
+    
+    // Verificar se há diferença na seleção usando Sets para operação mais rápida
+    const currentSet = new Set(selectedTagIds)
+    const newSet = new Set(selectedIds)
+    
+    // Verificar diferenças rapidamente
+    if (selectedIds.length !== selectedTagIds.length ||
+        selectedIds.some(id => !currentSet.has(id)) ||
+        selectedTagIds.some(id => !newSet.has(id))) {
+      onChange(selectedIds)
+    }
+  }, [rowSelection, tags, onChange, selectedTagIds])
+
+  const handleCreateTag = React.useCallback((newTag: { nome: string, cor: string }) => {
+    createTag(newTag)
+    setShowTagForm(false)
+  }, [createTag])
+
+  const table = React.useMemo(() => useReactTable({
     data: tags,
     columns,
     onSortingChange: setSorting,
@@ -157,12 +161,17 @@ export function TagSelectorTable({ selectedTagIds, onChange, onCreateTag }: TagS
       columnVisibility,
       rowSelection,
     },
-  })
+  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
 
-  const handleCreateTag = (newTag: { nome: string, cor: string }) => {
-    createTag(newTag)
-    setShowTagForm(false)
-  }
+  const selectedCount = React.useMemo(
+    () => table.getFilteredSelectedRowModel().rows.length,
+    [table]
+  )
+  
+  const totalCount = React.useMemo(
+    () => table.getFilteredRowModel().rows.length,
+    [table]
+  )
 
   return (
     <div>
@@ -300,8 +309,7 @@ export function TagSelectorTable({ selectedTagIds, onChange, onCreateTag }: TagS
               </div>
               <div className="flex items-center justify-end space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  {table.getFilteredSelectedRowModel().rows.length} de{" "}
-                  {table.getFilteredRowModel().rows.length} tag(s) selecionada(s).
+                  {selectedCount} de {totalCount} tag(s) selecionada(s).
                 </div>
                 <Button
                   onClick={() => setOpen(false)}
@@ -317,9 +325,7 @@ export function TagSelectorTable({ selectedTagIds, onChange, onCreateTag }: TagS
       {showTagForm && (
         <TagFormDialog 
           onSave={handleCreateTag}
-        >
-          <span></span> {/* Placeholder para evitar problema com o Trigger */}
-        </TagFormDialog>
+        />
       )}
     </div>
   )

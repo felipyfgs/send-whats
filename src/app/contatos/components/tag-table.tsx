@@ -59,7 +59,7 @@ export function TagTable() {
   const [showDeleteAlert, setShowDeleteAlert] = React.useState(false)
 
   // Definição das colunas da tabela
-  const columns: ColumnDef<Tag>[] = [
+  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
     {
       id: "select",
       header: ({ table }) => (
@@ -141,15 +141,15 @@ export function TagTable() {
         )
       },
     },
-  ]
+  ], [])
 
-  const handleEditTag = (tag: Tag) => {
+  const handleEditTag = React.useCallback((tag: Tag) => {
     // Esta função será implementada pelo componente pai
     // que abrirá o diálogo de edição
     toast.info(`Editar tag: ${tag.nome}`)
-  }
+  }, [])
 
-  const handleDeleteSingleTag = async (id: string) => {
+  const handleDeleteSingleTag = React.useCallback(async (id: string) => {
     try {
       await deleteTag(id)
       toast.success("Tag excluída com sucesso")
@@ -157,9 +157,9 @@ export function TagTable() {
       console.error("Erro ao excluir tag:", error)
       toast.error("Erro ao excluir a tag")
     }
-  }
+  }, [deleteTag])
 
-  const handleDeleteSelectedTags = async () => {
+  const handleDeleteSelectedTags = React.useCallback(async () => {
     const selectedRows = Object.keys(rowSelection).map(
       index => tags[parseInt(index)]
     )
@@ -170,9 +170,9 @@ export function TagTable() {
     }
     
     setShowDeleteAlert(true)
-  }
+  }, [rowSelection, tags])
 
-  const confirmDeleteSelectedTags = async () => {
+  const confirmDeleteSelectedTags = React.useCallback(async () => {
     const selectedRows = Object.keys(rowSelection).map(
       index => tags[parseInt(index)]
     )
@@ -182,15 +182,20 @@ export function TagTable() {
       const tagsToDelete = [...selectedRows] // Criar uma cópia para não modificar o original
       let tagsExcluidas = 0
       
-      for (const tag of tagsToDelete) {
+      // Usar Promise.all para executar operações em paralelo para melhor performance
+      const deletePromises = tagsToDelete.map(async (tag) => {
         try {
           await deleteTag(tag.id, true) // Passar true para o parâmetro silent
-          tagsExcluidas++
+          return true
         } catch (error) {
           console.error(`Erro ao excluir tag ${tag.id}:`, error)
-          // Continua a execução mesmo se houver erro em uma tag específica
+          return false
         }
-      }
+      })
+      
+      // Aguardar todas as operações e contar sucessos
+      const results = await Promise.all(deletePromises)
+      tagsExcluidas = results.filter(result => result).length
       
       // Exibir apenas uma notificação ao final do processo
       if (tagsExcluidas > 0) {
@@ -205,9 +210,9 @@ export function TagTable() {
       console.error("Erro ao excluir tags em massa:", error)
       toast.error("Erro ao excluir as tags selecionadas")
     }
-  }
+  }, [deleteTag, rowSelection, tags])
 
-  const table = useReactTable({
+  const table = React.useMemo(() => useReactTable({
     data: tags,
     columns,
     onSortingChange: setSorting,
@@ -224,7 +229,17 @@ export function TagTable() {
       columnVisibility,
       rowSelection,
     },
-  })
+  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
+
+  const filteredSelectedRowCount = React.useMemo(
+    () => table.getFilteredSelectedRowModel().rows.length,
+    [table]
+  )
+  
+  const filteredRowCount = React.useMemo(
+    () => table.getFilteredRowModel().rows.length,
+    [table]
+  )
 
   return (
     <>
@@ -333,8 +348,8 @@ export function TagTable() {
         </div>
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} de{" "}
-            {table.getFilteredRowModel().rows.length} tag(s) selecionada(s).
+            {filteredSelectedRowCount} de{" "}
+            {filteredRowCount} tag(s) selecionada(s).
           </div>
           <div className="space-x-2">
             <Button
@@ -362,7 +377,7 @@ export function TagTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a excluir {table.getFilteredSelectedRowModel().rows.length} tag(s).
+              Você está prestes a excluir {filteredSelectedRowCount} tag(s).
               Esta ação não pode ser desfeita e as tags serão removidas de todos os contatos.
             </AlertDialogDescription>
           </AlertDialogHeader>
