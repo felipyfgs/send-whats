@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Tag } from "./columns"
+import React, { useState, useEffect } from "react"
+import { Tag } from "../contatos/columns"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
-import { TagSelector } from "./tag-selector"
+import { TagSelector } from "../tags/tag-selector"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

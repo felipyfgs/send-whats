@@ -15,10 +15,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
-import { ContatosTable } from "./components/contatos-table"
+import { ContatosTable } from "./components/contatos/contatos-table"
 import { ContatosProvider } from "@/contexts/contatos-context"
-import { ContatosActions } from "./components/contatos-actions"
-import { TagManagerFab } from "./components/tag-manager-fab"
+import { ContatosActions } from "./components/contatos/contatos-actions"
+import { TagManagerFab } from "./components/tags/tag-manager-fab"
 
 export const metadata: Metadata = {
   title: "Contatos | Meu App",
