@@ -4,19 +4,12 @@ import { useState, useEffect } from "react"
 import { Contato, Tag } from "./columns"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
-import { TagSelector } from "./tag-selector"
-import { Controller } from "react-hook-form"
+import { TagSelectorSimple } from "./tag-selector-simple"
+import { TagFormDialog } from "./tag-form-dialog"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { 
   Form, 
   FormControl, 
@@ -25,25 +18,41 @@ import {
   FormLabel, 
   FormMessage 
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import * as z from "zod"
 
-// Esquema de validação com zod
+interface DbContato {
+  id?: string
+  nome: string
+  telefone: string | null
+  email: string | null
+  empresa: string | null
+  cargo: string | null
+  observacoes: string | null
+  status: string
+  categoria: "pessoal" | "trabalho" | "familia" | "outro"
+}
+
 const contatoSchema = z.object({
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().min(8, "Telefone deve ter pelo menos 8 caracteres"),
-  categoria: z.enum(["pessoal", "trabalho", "familia", "outro"]),
   empresa: z.string().optional().or(z.literal("")),
   cargo: z.string().optional().or(z.literal("")),
   observacoes: z.string().optional().or(z.literal("")),
+  categoria: z.enum(["pessoal", "trabalho", "familia", "outro"]),
 })
 
-type ContatoFormValues = z.infer<typeof contatoSchema>
-
 interface ContatoFormProps {
-  contato?: Contato
+  contato?: DbContato & { tags?: Tag[] }
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -51,67 +60,77 @@ interface ContatoFormProps {
 export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) {
   const { createContato, updateContato, tags } = useContatos()
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const isEditing = !!contato
 
-  // Configurar o formulário com react-hook-form
-  const form = useForm<ContatoFormValues>({
+  const form = useForm<z.infer<typeof contatoSchema>>({
     resolver: zodResolver(contatoSchema),
     defaultValues: {
-      nome: contato?.nome || "",
-      email: contato?.email || "",
-      telefone: contato?.telefone || "",
-      categoria: contato?.categoria || "pessoal",
-      empresa: contato?.empresa || "",
-      cargo: contato?.cargo || "",
-      observacoes: contato?.observacoes || ""
+      nome: contato?.nome ?? "",
+      email: contato?.email ?? "",
+      telefone: contato?.telefone ?? "",
+      empresa: contato?.empresa ?? "",
+      cargo: contato?.cargo ?? "",
+      observacoes: contato?.observacoes ?? "",
+      categoria: contato?.categoria ?? "outro",
     }
   })
 
-  // Preencher tags selecionadas quando estiver editando
   useEffect(() => {
     if (contato?.tags) {
       setSelectedTagIds(contato.tags.map(tag => tag.id))
     }
   }, [contato])
 
-  const onSubmit = async (data: ContatoFormValues) => {
+  const onSubmit: SubmitHandler<z.infer<typeof contatoSchema>> = async (data) => {
     setIsSaving(true)
     
     try {
-      // Buscar objetos Tag completos baseados nos IDs selecionados
-      const selectedTags = tags.filter(tag => selectedTagIds.includes(tag.id))
-      
-      if (isEditing && contato) {
-        // Atualizar contato existente
+      const prepareValue = (value?: string | null) => {
+        if (!value) return null
+        const trimmed = value.trim()
+        return trimmed === "" ? null : trimmed
+      }
+
+      const contatoData: DbContato = {
+        nome: data.nome,
+        telefone: prepareValue(data.telefone),
+        email: prepareValue(data.email),
+        empresa: prepareValue(data.empresa),
+        cargo: prepareValue(data.cargo),
+        observacoes: prepareValue(data.observacoes),
+        status: 'Ativo',
+        categoria: data.categoria
+      }
+
+      if (isEditing && contato?.id) {
         await updateContato({
-          ...contato,
-          ...data,
-          tags: selectedTags
+          ...contatoData,
+          id: contato.id,
+          tags: contato.tags || [],
+          categoria: contato.categoria || "outro"
         })
         toast.success("Contato atualizado com sucesso")
       } else {
-        // Criar novo contato
         await createContato({
-          ...data,
-          tags: selectedTags
-        } as Omit<Contato, "id">)
+          ...contatoData,
+          tags: selectedTagIds.map(tagId => tags.find(tag => tag.id === tagId)!).filter(Boolean)
+        })
         toast.success("Contato criado com sucesso")
       }
-      
-      // Chamar função de sucesso se fornecida
+
       if (onSuccess) onSuccess()
       
-      // Se não estiver editando, limpar o formulário
       if (!isEditing) {
         form.reset({
           nome: "",
           email: "",
           telefone: "",
-          categoria: "pessoal",
           empresa: "",
           cargo: "",
-          observacoes: ""
+          observacoes: "",
+          categoria: "outro",
         })
         setSelectedTagIds([])
       }
@@ -134,7 +153,10 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
               <FormItem>
                 <FormLabel>Nome</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome do contato" {...field} />
+                  <Input 
+                    placeholder="Nome do contato" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -148,7 +170,10 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="(00) 00000-0000" {...field} />
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -162,41 +187,15 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="email@exemplo.com" {...field} />
+                  <Input 
+                    placeholder="email@exemplo.com" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
-          <div className="space-y-2">
-            <FormLabel>Categoria</FormLabel>
-            <Controller
-              name="categoria"
-              control={form.control}
-              render={({ field }) => (
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pessoal">Pessoal</SelectItem>
-                    <SelectItem value="trabalho">Trabalho</SelectItem>
-                    <SelectItem value="familia">Família</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {form.formState.errors.categoria && (
-              <p className="text-sm font-medium text-destructive">
-                {form.formState.errors.categoria.message}
-              </p>
-            )}
-          </div>
           
           <FormField
             control={form.control}
@@ -205,7 +204,10 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome da empresa (opcional)" {...field} />
+                  <Input 
+                    placeholder="Nome da empresa (opcional)" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -219,8 +221,38 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
               <FormItem>
                 <FormLabel>Cargo</FormLabel>
                 <FormControl>
-                  <Input placeholder="Cargo (opcional)" {...field} />
+                  <Input 
+                    placeholder="Cargo (opcional)" 
+                    {...field} 
+                  />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="categoria"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoria</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="pessoal">Pessoal</SelectItem>
+                    <SelectItem value="trabalho">Trabalho</SelectItem>
+                    <SelectItem value="familia">Família</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -234,23 +266,24 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
             <FormItem>
               <FormLabel>Observações</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="Observações adicionais sobre o contato (opcional)" 
-                  className="min-h-[100px]"
-                  {...field} 
-                />
+                  <Textarea 
+                    placeholder="Observações adicionais sobre o contato (opcional)" 
+                    className="min-h-[100px]"
+                    {...field}
+                  />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <div className="space-y-2">
+        <div className="mt-4">
           <FormLabel>Tags</FormLabel>
-          <TagSelector
+          <TagSelectorSimple
             tags={tags}
             selectedTagIds={selectedTagIds}
             onChange={setSelectedTagIds}
+            onCreateTag={() => setIsTagDialogOpen(true)}
           />
         </div>
         
@@ -271,4 +304,4 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
       </form>
     </Form>
   )
-} 
+}
