@@ -29,13 +29,13 @@ export type Tag = {
 export type Contato = {
   id: string
   nome: string
-  email: string
-  telefone: string
+  email: string | null
+  telefone: string | null
   categoria: "pessoal" | "trabalho" | "familia" | "outro"
   tags: Tag[]
-  empresa?: string
-  cargo?: string
-  observacoes?: string
+  empresa: string | null
+  cargo: string | null
+  observacoes: string | null
 }
 
 // Componente para as células com ações do contato
@@ -64,7 +64,11 @@ function ActionsCell({ contato }: { contato: Contato }) {
     toast(`Use os botões de ação acima para gerenciar as tags de ${contato.nome}`)
   }, [contato.id, contato.nome, setSelectedContatos])
 
-  const copyToClipboard = useCallback((text: string, message: string) => {
+  const copyToClipboard = useCallback((text: string | null | undefined, message: string) => {
+    if (text === null || text === undefined || text === "") {
+      toast.error("Nada para copiar")
+      return
+    }
     navigator.clipboard.writeText(text)
     toast.success(message)
   }, [])
