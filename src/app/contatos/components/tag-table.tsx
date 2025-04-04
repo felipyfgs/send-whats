@@ -178,12 +178,27 @@ export function TagTable() {
     )
     
     try {
-      // Excluir tags em sequência
-      for (const tag of selectedRows) {
-        await deleteTag(tag.id)
+      // Excluir tags em sequência sem notificações individuais
+      const tagsToDelete = [...selectedRows] // Criar uma cópia para não modificar o original
+      let tagsExcluidas = 0
+      
+      for (const tag of tagsToDelete) {
+        try {
+          await deleteTag(tag.id, true) // Passar true para o parâmetro silent
+          tagsExcluidas++
+        } catch (error) {
+          console.error(`Erro ao excluir tag ${tag.id}:`, error)
+          // Continua a execução mesmo se houver erro em uma tag específica
+        }
       }
       
-      toast.success(`${selectedRows.length} tag(s) excluída(s) com sucesso`)
+      // Exibir apenas uma notificação ao final do processo
+      if (tagsExcluidas > 0) {
+        toast.success(`${tagsExcluidas} tag${tagsExcluidas > 1 ? 's' : ''} excluída${tagsExcluidas > 1 ? 's' : ''} com sucesso`)
+      } else {
+        toast.error("Não foi possível excluir as tags selecionadas")
+      }
+      
       setRowSelection({})
       setShowDeleteAlert(false)
     } catch (error) {

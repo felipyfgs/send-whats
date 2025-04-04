@@ -22,7 +22,7 @@ interface ContatosContextType {
   // Funções de tags
   createTag: (tag: Omit<Tag, "id">) => Promise<void>;
   updateTag: (tag: Tag) => Promise<void>;
-  deleteTag: (id: string) => Promise<void>;
+  deleteTag: (id: string, silent?: boolean) => Promise<void>;
   
   // Funções de seleção
   selectContato: (id: string) => void;
@@ -207,21 +207,26 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteTag = async (id: string) => {
+  const deleteTag = async (id: string, silent = false) => {
     try {
       await db.deleteTag(id);
-      toast({
-        title: "Sucesso",
-        description: "Tag excluída com sucesso!"
-      });
+      if (!silent) {
+        toast({
+          title: "Sucesso",
+          description: "Tag excluída com sucesso!"
+        });
+      }
       await refreshData();
     } catch (error) {
       console.error("Erro ao excluir tag:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir a tag.",
-        variant: "destructive"
-      });
+      if (!silent) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir a tag.",
+          variant: "destructive"
+        });
+      }
+      throw error; // Repassar o erro para ser tratado pelo chamador
     }
   };
 
