@@ -53,85 +53,82 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [isInternalUpdate, setIsInternalUpdate] = React.useState(false)
+  const lastSelectionRef = React.useRef<Record<string, boolean>>({})
+  const ignoreEffectRef = React.useRef(false)
 
-  // Sincronizar seleção da tabela com o contexto de contatos
+  // Uma única direção de sincronização: da tabela para o contexto
+  // Isso simplifica o fluxo de dados e melhora o desempenho
   React.useEffect(() => {
-    if (isInternalUpdate) {
-      setIsInternalUpdate(false)
+    // Se estamos ignorando o efeito (porque estamos atualizando da tabela), saia
+    if (ignoreEffectRef.current) {
+      ignoreEffectRef.current = false
       return
     }
-    
-    // Obter os IDs de contatos das linhas selecionadas
-    const selectedRowIds = Object.keys(rowSelection)
-    
-    if (selectedRowIds.length > 0) {
-      const selectedIds = selectedRowIds.map(
-        (idx) => (data[parseInt(idx)] as any).id
-      )
-      
-      // Verificar se a seleção atual é diferente da seleção no contexto
-      // antes de atualizar para evitar ciclos de renderização
-      const currentSelectedIds = new Set(selectedIds)
-      const contextSelectedIds = new Set(selectedContatos)
-      
-      // Verifica se os conjuntos são diferentes em tamanho ou conteúdo
-      const needsUpdate = 
-        currentSelectedIds.size !== contextSelectedIds.size || 
-        selectedIds.some(id => !contextSelectedIds.has(id))
-      
-      if (needsUpdate) {
-        setSelectedContatos(selectedIds)
-      }
-    } else if (selectedContatos.length > 0) {
-      // Apenas limpar se o contexto tiver itens selecionados
-      setSelectedContatos([])
-    }
-  }, [rowSelection, data, selectedContatos, setSelectedContatos])
 
-  // Sincronizar o contexto de contatos com a seleção da tabela
+    // Compare rowSelection com a última seleção para evitar atualizações desnecessárias
+    const currentSelectionStr = JSON.stringify(rowSelection)
+    const lastSelectionStr = JSON.stringify(lastSelectionRef.current)
+    
+    if (currentSelectionStr === lastSelectionStr) {
+      return // Não houve mudança real, evitar atualização
+    }
+    
+    // Atualizar a referência de última seleção
+    lastSelectionRef.current = {...rowSelection}
+    
+    // Converter as linhas selecionadas para IDs de contatos
+    const selectedIds = Object.keys(rowSelection)
+      .map(idx => (data[parseInt(idx)] as any)?.id)
+      .filter(Boolean) // Remover possíveis valores undefined ou null
+    
+    // Atualizar o contexto com os IDs selecionados
+    setSelectedContatos(selectedIds)
+  }, [rowSelection, data, setSelectedContatos])
+
+  // Sincronizar seleções externas (do contexto) para a tabela
+  // Somente quando o selectedContatos muda e não é causado pela tabela
   React.useEffect(() => {
-    if (isInternalUpdate) return
+    // Mapeamento rápido de ID para índice
+    const idToIndexMap = new Map()
+    data.forEach((item, index) => {
+      const id = (item as any).id
+      if (id) idToIndexMap.set(id, index)
+    })
     
-    // Criar um mapa para busca rápida de IDs
-    const dataIdMap = new Map(
-      data.map((item, index) => [(item as any).id, index])
-    )
-    
-    // Calcular nova seleção baseada nos IDs selecionados no contexto
-    const newRowSelection: Record<number, boolean> = {}
+    // Criar objeto de seleção baseado nos IDs dos contatos
+    const newSelection: Record<number, boolean> = {}
     let hasChanges = false
     
     // Verificar cada ID selecionado no contexto
-    selectedContatos.forEach(id => {
-      const rowIndex = dataIdMap.get(id)
+    for (const id of selectedContatos) {
+      const rowIndex = idToIndexMap.get(id)
       if (rowIndex !== undefined) {
-        newRowSelection[rowIndex] = true
+        newSelection[rowIndex] = true
         
-        // Verificar se esta linha já estava selecionada
+        // Verificar se esta seleção é diferente da atual
         if (!Object.prototype.hasOwnProperty.call(rowSelection, rowIndex.toString())) {
           hasChanges = true
         }
       }
-    })
+    }
     
     // Verificar se alguma linha selecionada não está mais no contexto
     Object.keys(rowSelection).forEach(indexStr => {
       const index = parseInt(indexStr)
-      const id = (data[index] as any)?.id
-      
-      if (id && !selectedContatos.includes(id)) {
+      if (Object.prototype.hasOwnProperty.call(rowSelection, indexStr) && !newSelection[index]) {
         hasChanges = true
       }
     })
     
-    // Só atualizar se houver mudanças reais na seleção
+    // Só atualizar se houver mudanças reais
     if (hasChanges) {
-      setIsInternalUpdate(true)
-      setRowSelection(newRowSelection)
+      // Impedir que a atualização da tabela acione o outro efeito
+      ignoreEffectRef.current = true
+      setRowSelection(newSelection)
     }
-  }, [selectedContatos, data, rowSelection, setRowSelection])
+  }, [selectedContatos, data, rowSelection])
 
+  // Configuração da tabela
   const table = useReactTable({
     data,
     columns,
@@ -142,7 +139,9 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: (updater) => {
+      setRowSelection(updater)
+    },
     state: {
       sorting,
       columnFilters,
