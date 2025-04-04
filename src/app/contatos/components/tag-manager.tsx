@@ -177,7 +177,6 @@ export function TagManager() {
   const [searchTerm, setSearchTerm] = useState("")
   const [assignedTagIds, setAssignedTagIds] = useState<string[]>([])
   const [unassignedTagIds, setUnassignedTagIds] = useState<string[]>([])
-  const [showTagForm, setShowTagForm] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [saving, setSaving] = useState(false)
   const [partialTagIds, setPartialTagIds] = useState<string[]>([])
@@ -321,7 +320,6 @@ export function TagManager() {
   
   const handleEditTag = (tag: Tag) => {
     setEditingTag(tag)
-    setShowTagForm(true)
   }
   
   const handleDeleteTag = async (tagId: string) => {
@@ -344,17 +342,11 @@ export function TagManager() {
             Gerencie todas as tags do sistema
           </CardDescription>
           <div className="flex justify-end mt-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setEditingTag(null)
-                setShowTagForm(true)
+            <TagFormDialog
+              onSave={(tagData) => {
+                createTag(tagData)
               }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tag
-            </Button>
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -379,17 +371,11 @@ export function TagManager() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setEditingTag(null)
-                setShowTagForm(true)
+            <TagFormDialog
+              onSave={(tagData) => {
+                createTag(tagData)
               }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tag
-            </Button>
+            />
           </div>
         </div>
       </CardHeader>
@@ -516,20 +502,15 @@ export function TagManager() {
         </Button>
       </CardFooter>
       
-      {/* Diálogo para criar/editar tag */}
-      {showTagForm && (
+      {/* Diálogo para editar tag */}
+      {editingTag && (
         <TagFormDialog
           tag={editingTag}
           onSave={(tagData) => {
-            if (editingTag) {
-              updateTag({
-                id: editingTag.id,
-                ...tagData
-              })
-            } else {
-              createTag(tagData)
-            }
-            setShowTagForm(false)
+            updateTag({
+              id: editingTag.id,
+              ...tagData
+            })
             setEditingTag(null)
           }}
         />

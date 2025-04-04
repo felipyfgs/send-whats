@@ -6,8 +6,7 @@ import {
   DialogDescription, 
   DialogHeader, 
   DialogTitle,
-  DialogTrigger,
-  DialogFooter
+  DialogTrigger
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { TagManager } from "./tag-manager"
@@ -53,12 +52,6 @@ export function TagManagerDialog({ children, trigger }: TagManagerDialogProps) {
         <div className="py-2">
           <TagManager />
         </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Fechar
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
