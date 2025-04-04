@@ -53,9 +53,15 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [isInternalUpdate, setIsInternalUpdate] = React.useState(false)
 
   // Sincronizar seleção da tabela com o contexto de contatos
   React.useEffect(() => {
+    if (isInternalUpdate) {
+      setIsInternalUpdate(false)
+      return
+    }
+    
     // Obter os IDs de contatos das linhas selecionadas
     const selectedRowIds = Object.keys(rowSelection)
     
@@ -63,34 +69,66 @@ export function DataTable<TData, TValue>({
       const selectedIds = selectedRowIds.map(
         (idx) => (data[parseInt(idx)] as any).id
       )
-      setSelectedContatos(selectedIds)
-    } else {
+      
+      // Verificar se a seleção atual é diferente da seleção no contexto
+      // antes de atualizar para evitar ciclos de renderização
+      const currentSelectedIds = new Set(selectedIds)
+      const contextSelectedIds = new Set(selectedContatos)
+      
+      // Verifica se os conjuntos são diferentes em tamanho ou conteúdo
+      const needsUpdate = 
+        currentSelectedIds.size !== contextSelectedIds.size || 
+        selectedIds.some(id => !contextSelectedIds.has(id))
+      
+      if (needsUpdate) {
+        setSelectedContatos(selectedIds)
+      }
+    } else if (selectedContatos.length > 0) {
+      // Apenas limpar se o contexto tiver itens selecionados
       setSelectedContatos([])
     }
-  }, [rowSelection, data, setSelectedContatos])
+  }, [rowSelection, data, selectedContatos, setSelectedContatos])
 
   // Sincronizar o contexto de contatos com a seleção da tabela
   React.useEffect(() => {
-    // Se não há contatos selecionados, limpar a seleção da tabela
-    if (selectedContatos.length === 0 && Object.keys(rowSelection).length > 0) {
-      setRowSelection({})
-      return
-    }
+    if (isInternalUpdate) return
     
-    // Se temos contatos selecionados mas nenhuma linha selecionada na tabela,
-    // atualizar a seleção da tabela
-    if (selectedContatos.length > 0 && Object.keys(rowSelection).length === 0) {
-      const newRowSelection: Record<number, boolean> = {}
-      
-      data.forEach((item, index) => {
-        if (selectedContatos.includes((item as any).id)) {
-          newRowSelection[index] = true
+    // Criar um mapa para busca rápida de IDs
+    const dataIdMap = new Map(
+      data.map((item, index) => [(item as any).id, index])
+    )
+    
+    // Calcular nova seleção baseada nos IDs selecionados no contexto
+    const newRowSelection: Record<number, boolean> = {}
+    let hasChanges = false
+    
+    // Verificar cada ID selecionado no contexto
+    selectedContatos.forEach(id => {
+      const rowIndex = dataIdMap.get(id)
+      if (rowIndex !== undefined) {
+        newRowSelection[rowIndex] = true
+        
+        // Verificar se esta linha já estava selecionada
+        if (!Object.prototype.hasOwnProperty.call(rowSelection, rowIndex.toString())) {
+          hasChanges = true
         }
-      })
-      
-      if (Object.keys(newRowSelection).length > 0) {
-        setRowSelection(newRowSelection)
       }
+    })
+    
+    // Verificar se alguma linha selecionada não está mais no contexto
+    Object.keys(rowSelection).forEach(indexStr => {
+      const index = parseInt(indexStr)
+      const id = (data[index] as any)?.id
+      
+      if (id && !selectedContatos.includes(id)) {
+        hasChanges = true
+      }
+    })
+    
+    // Só atualizar se houver mudanças reais na seleção
+    if (hasChanges) {
+      setIsInternalUpdate(true)
+      setRowSelection(newRowSelection)
     }
   }, [selectedContatos, data, rowSelection, setRowSelection])
 
