@@ -53,6 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { TagTable } from "./tag-table"
 
 interface TagItemProps {
   tag: Tag
@@ -357,43 +358,10 @@ export function TagManager() {
       )
     }
     
+    // Nova implementação usando TagTable
     return (
       <div className="space-y-3">
-        <div className="relative mb-4">
-          <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar tags..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-4"
-          />
-          {searchTerm && (
-            <button
-              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-              onClick={() => setSearchTerm("")}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        
-        {filteredTags.length > 0 ? (
-          filteredTags.map(tag => (
-            <TagItem
-              key={tag.id}
-              tag={tag}
-              isAssigned={false}
-              onToggle={() => {}}
-              onEdit={handleEditTag}
-              onDelete={handleDeleteTag}
-              allowManage={true}
-            />
-          ))
-        ) : (
-          <div className="text-center py-6 text-muted-foreground">
-            <p>Nenhuma tag encontrada com este termo</p>
-          </div>
-        )}
+        <TagTable />
       </div>
     )
   }
