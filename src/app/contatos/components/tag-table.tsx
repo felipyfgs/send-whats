@@ -14,7 +14,7 @@ import {
   useReactTable,
   Row,
 } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Check } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -83,6 +83,23 @@ const TagActionCell = React.memo(
   }
 );
 TagActionCell.displayName = "TagActionCell";
+
+// Componente para mostrar status de seleção na tabela
+const SelectIndicator = React.memo(
+  ({ isSelected }: { isSelected: boolean }) => {
+    return (
+      <div className={`
+        w-5 h-5 rounded border flex items-center justify-center
+        ${isSelected 
+          ? "border-primary bg-primary text-primary-foreground" 
+          : "border-muted-foreground/20 text-transparent"}
+      `}>
+        <Check className="h-3 w-3" />
+      </div>
+    )
+  }
+)
+SelectIndicator.displayName = "SelectIndicator"
 
 export function TagTable() {
   // 1. Contexto (useContext) - Sempre primeiro
@@ -176,6 +193,33 @@ export function TagTable() {
     setEditingTag(null)
   }, [editingTag, updateTag])
   
+  // Manipulador de seleção de tags
+  const handleTagSelection = React.useCallback((selectedValues: string[]) => {
+    setSelectedTagIds(selectedValues)
+  }, [])
+  
+  // Manipulador para alternar seleção de tag ao clicar na linha
+  const toggleTagSelection = React.useCallback((tagId: string) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) {
+        return prev.filter(id => id !== tagId)
+      } else {
+        return [...prev, tagId]
+      }
+    })
+  }, [])
+  
+  // Selecionar/desselecionar todas as tags
+  const toggleSelectAllTags = React.useCallback(() => {
+    if (selectedTagIds.length === tags.length) {
+      // Se todas estiverem selecionadas, desseleciona todas
+      setSelectedTagIds([])
+    } else {
+      // Seleciona todas
+      setSelectedTagIds(tags.map(tag => tag.id))
+    }
+  }, [selectedTagIds, tags])
+  
   // 4. Memos (useMemo) - Todos os useMemo juntos
   // Converter tags para o formato de opções para o multiselect
   const tagOptions = React.useMemo<OptionType[]>(() => {
@@ -188,6 +232,28 @@ export function TagTable() {
   
   // Definição das colunas da tabela
   const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex justify-center">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleSelectAllTags()
+            }}
+            className="cursor-pointer"
+          >
+            <SelectIndicator isSelected={selectedTagIds.length === tags.length} />
+          </button>
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex justify-center">
+          <SelectIndicator isSelected={selectedTagIds.includes(row.original.id)} />
+        </div>
+      ),
+      enableSorting: false,
+    },
     {
       accessorKey: "nome",
       header: ({ column }) => {
@@ -219,7 +285,7 @@ export function TagTable() {
         return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
       },
     },
-  ], [handleEditTag, handleDeleteSingleTag])
+  ], [handleEditTag, handleDeleteSingleTag, selectedTagIds, tags, toggleSelectAllTags])
 
   // Configuração da tabela
   const table = useReactTable({
@@ -244,11 +310,6 @@ export function TagTable() {
     () => table.getFilteredRowModel().rows.length,
     [table]
   )
-
-  // Manipulador de seleção de tags
-  const handleTagSelection = React.useCallback((selectedValues: string[]) => {
-    setSelectedTagIds(selectedValues)
-  }, [])
 
   // 5. Renderização
   return (
@@ -316,7 +377,9 @@ export function TagTable() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    data-state={selectedTagIds.includes(row.original.id) && "selected"}
+                    data-state={selectedTagIds.includes(row.original.id) ? "selected" : undefined}
+                    className={`cursor-pointer ${selectedTagIds.includes(row.original.id) ? "bg-muted/50" : ""}`}
+                    onClick={() => toggleTagSelection(row.original.id)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
