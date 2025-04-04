@@ -105,7 +105,6 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           cargo: prepareValue(data.cargo),
           observacoes: prepareValue(data.observacoes)
         })
-        toast.success("Contato atualizado com sucesso")
       } else {
         await createContato({
           nome: data.nome,
@@ -117,7 +116,6 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           cargo: prepareValue(data.cargo),
           observacoes: prepareValue(data.observacoes)
         })
-        toast.success("Contato criado com sucesso")
       }
 
       if (onSuccess) onSuccess()
