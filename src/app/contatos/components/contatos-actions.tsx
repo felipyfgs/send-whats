@@ -4,7 +4,6 @@ import { useState, useCallback } from "react"
 import { useContatos } from "@/contexts/contatos-context"
 import { Button } from "@/components/ui/button"
 import { 
-  PlusCircle, 
   Trash2, 
   RefreshCw, 
   Tag, 
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { TagSelector } from "./tag-selector"
 import { toast } from "sonner"
+import { ContatoCreateDialog } from "./contato-create-dialog"
 
 export function ContatosActions() {
   const { 
@@ -118,10 +118,7 @@ export function ContatosActions() {
         {isRefreshing ? 'Atualizando...' : 'Atualizar'}
       </Button>
       
-      <Button size="sm">
-        <PlusCircle className="mr-2 h-4 w-4" />
-        Novo Contato
-      </Button>
+      <ContatoCreateDialog />
     </div>
   )
 

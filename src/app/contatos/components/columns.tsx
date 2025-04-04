@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Phone, Mail, User } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Phone, Mail, User, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
+import { ContatoDetailDialog } from "./contato-detail-dialog"
 
 // Definição do tipo de dados para tags
 export type Tag = {
@@ -32,11 +33,15 @@ export type Contato = {
   telefone: string
   categoria: "pessoal" | "trabalho" | "familia" | "outro"
   tags: Tag[]
+  empresa?: string
+  cargo?: string
+  observacoes?: string
 }
 
 // Componente para as células com ações do contato
 function ActionsCell({ contato }: { contato: Contato }) {
   const { deleteContato, setSelectedContatos } = useContatos()
+  const [showDetailDialog, setShowDetailDialog] = useState(false)
 
   const handleDelete = useCallback(async () => {
     try {
@@ -48,10 +53,9 @@ function ActionsCell({ contato }: { contato: Contato }) {
     }
   }, [contato.id, contato.nome, deleteContato])
 
-  const handleEdit = useCallback(() => {
-    // Implementação futura da edição
-    toast(`Edição do contato ${contato.nome} será implementada em breve`)
-  }, [contato.nome])
+  const handleViewDetails = useCallback(() => {
+    setShowDetailDialog(true)
+  }, [])
 
   const handleManageTags = useCallback(() => {
     // Seleciona apenas este contato para gerenciar tags
@@ -66,56 +70,63 @@ function ActionsCell({ contato }: { contato: Contato }) {
   }, [])
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Abrir menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-        <DropdownMenuItem
-          onClick={() => copyToClipboard(
-            contato.id, 
-            "ID do contato copiado para a área de transferência"
-          )}
-        >
-          Copiar ID
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleEdit}>
-          Editar contato
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => copyToClipboard(
-            contato.email,
-            "Email copiado para a área de transferência"
-          )}
-        >
-          Copiar email
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => copyToClipboard(
-            contato.telefone,
-            "Telefone copiado para a área de transferência"
-          )}
-        >
-          Copiar telefone
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          Ver detalhes
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleManageTags}>
-          Gerenciar tags
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          onClick={handleDelete}
-          className="text-destructive"
-        >
-          Excluir contato
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Abrir menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => copyToClipboard(
+              contato.id, 
+              "ID do contato copiado para a área de transferência"
+            )}
+          >
+            Copiar ID
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleViewDetails}>
+            <Eye className="mr-2 h-4 w-4" />
+            Ver detalhes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => copyToClipboard(
+              contato.email,
+              "Email copiado para a área de transferência"
+            )}
+          >
+            Copiar email
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => copyToClipboard(
+              contato.telefone,
+              "Telefone copiado para a área de transferência"
+            )}
+          >
+            Copiar telefone
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleManageTags}>
+            Gerenciar tags
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={handleDelete}
+            className="text-destructive"
+          >
+            Excluir contato
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Diálogo de detalhes */}
+      <ContatoDetailDialog
+        contatoId={contato.id}
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+      />
+    </>
   )
 }
 
