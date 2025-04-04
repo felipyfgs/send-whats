@@ -2,24 +2,20 @@
 
 import * as React from "react"
 import {
-  ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  Row,
 } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Check } from "lucide-react"
+import { ArrowUpDown, CheckCircle, MoreHorizontal, Pencil, Plus, Search, Trash2, Check } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -27,14 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useContatos } from "@/contexts/contatos-context"
 import { Tag } from "./columns"
@@ -51,14 +39,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { TagFormDialog } from "./tag-form-dialog"
 import { MultiSelect, OptionType } from "./multi-select"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
-// Extrair o componente de ação de tag para evitar hooks dentro de renderização
-const TagActionCell = React.memo(
+// Componente para botão de ação da tag
+const TagActions = React.memo(
   ({ tag, onEdit, onDelete }: { tag: Tag; onEdit: (tag: Tag) => void; onDelete: (id: string) => void }) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -82,38 +71,69 @@ const TagActionCell = React.memo(
     );
   }
 );
-TagActionCell.displayName = "TagActionCell";
+TagActions.displayName = "TagActions";
 
-// Componente para mostrar status de seleção na tabela
-const SelectIndicator = React.memo(
-  ({ isSelected }: { isSelected: boolean }) => {
+// Componente de card de tag
+const TagCard = React.memo(
+  ({ 
+    tag, 
+    isSelected, 
+    onToggleSelect, 
+    onEdit, 
+    onDelete 
+  }: { 
+    tag: Tag; 
+    isSelected: boolean; 
+    onToggleSelect: (id: string) => void; 
+    onEdit: (tag: Tag) => void; 
+    onDelete: (id: string) => void 
+  }) => {
     return (
-      <div className={`
-        w-5 h-5 rounded border flex items-center justify-center
-        ${isSelected 
-          ? "border-primary bg-primary text-primary-foreground" 
-          : "border-muted-foreground/20 text-transparent"}
-      `}>
-        <Check className="h-3 w-3" />
-      </div>
+      <Card 
+        className={`relative cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+        onClick={() => onToggleSelect(tag.id)}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <Badge 
+              style={{ backgroundColor: tag.cor }}
+              className="text-white px-3 py-1 text-sm"
+            >
+              {tag.nome}
+            </Badge>
+            
+            <div className="flex items-center gap-1">
+              {isSelected && (
+                <CheckCircle className="h-5 w-5 text-primary mr-1" />
+              )}
+              <TagActions tag={tag} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 pb-2">
+          <div 
+            className="w-full h-3 rounded-full" 
+            style={{ backgroundColor: tag.cor, opacity: 0.2 }}
+          />
+        </CardContent>
+      </Card>
     )
   }
 )
-SelectIndicator.displayName = "SelectIndicator"
+TagCard.displayName = "TagCard"
 
 export function TagTable() {
   // 1. Contexto (useContext) - Sempre primeiro
   const { tags, updateTag, deleteTag } = useContatos()
   
   // 2. Estados (useState) - Todos os estados agrupados juntos
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [searchQuery, setSearchQuery] = React.useState('')
   const [showDeleteAlert, setShowDeleteAlert] = React.useState(false)
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
   const [selectedTagIds, setSelectedTagIds] = React.useState<string[]>([])
+  const [currentPage, setCurrentPage] = React.useState(0)
+  const [itemsPerPage] = React.useState(12)
   
   // 3. Callbacks (useCallback) - Definir antes dos memos que dependem deles
   const handleEditTag = React.useCallback((tag: Tag) => {
@@ -211,16 +231,26 @@ export function TagTable() {
   
   // Selecionar/desselecionar todas as tags
   const toggleSelectAllTags = React.useCallback(() => {
-    if (selectedTagIds.length === tags.length) {
+    if (selectedTagIds.length === filteredTags.length) {
       // Se todas estiverem selecionadas, desseleciona todas
       setSelectedTagIds([])
     } else {
       // Seleciona todas
-      setSelectedTagIds(tags.map(tag => tag.id))
+      setSelectedTagIds(filteredTags.map(tag => tag.id))
     }
-  }, [selectedTagIds, tags])
+  }, [selectedTagIds])
   
   // 4. Memos (useMemo) - Todos os useMemo juntos
+  // Filtrar tags com base na pesquisa
+  const filteredTags = React.useMemo(() => {
+    if (!searchQuery.trim()) return tags;
+    
+    const lowerQuery = searchQuery.toLowerCase();
+    return tags.filter(tag => 
+      tag.nome.toLowerCase().includes(lowerQuery)
+    );
+  }, [tags, searchQuery]);
+  
   // Converter tags para o formato de opções para o multiselect
   const tagOptions = React.useMemo<OptionType[]>(() => {
     return tags.map(tag => ({
@@ -230,100 +260,29 @@ export function TagTable() {
     }))
   }, [tags])
   
-  // Definição das colunas da tabela
-  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex justify-center">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleSelectAllTags()
-            }}
-            className="cursor-pointer"
-          >
-            <SelectIndicator isSelected={selectedTagIds.length === tags.length} />
-          </button>
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex justify-center">
-          <SelectIndicator isSelected={selectedTagIds.includes(row.original.id)} />
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Nome
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Badge 
-            style={{ backgroundColor: row.original.cor }}
-            className="text-white px-3 py-1"
-          >
-            {row.getValue("nome")}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
-      },
-    },
-  ], [handleEditTag, handleDeleteSingleTag, selectedTagIds, tags, toggleSelectAllTags])
-
-  // Configuração da tabela
-  const table = useReactTable({
-    data: tags,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  })
-
-  // Valores derivados
-  const filteredRowCount = React.useMemo(
-    () => table.getFilteredRowModel().rows.length,
-    [table]
-  )
+  // Calcular paginação
+  const paginatedTags = React.useMemo(() => {
+    const startIndex = currentPage * itemsPerPage;
+    return filteredTags.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTags, currentPage, itemsPerPage]);
+  
+  // Calcular o número total de páginas
+  const totalPages = React.useMemo(() => {
+    return Math.ceil(filteredTags.length / itemsPerPage);
+  }, [filteredTags, itemsPerPage]);
 
   // 5. Renderização
   return (
     <>
-      <div className="w-full">
+      <div className="w-full space-y-4">
         <div className="flex items-center justify-between py-4">
-          <div className="flex items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Filtrar tags..."
-              value={(table.getColumn("nome")?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn("nome")?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
+              placeholder="Buscar tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
             />
           </div>
           
@@ -338,6 +297,16 @@ export function TagTable() {
                 Excluir Selecionadas
               </Button>
             )}
+            
+            <Button 
+              variant={selectedTagIds.length === filteredTags.length ? "default" : "outline"}
+              size="sm"
+              onClick={toggleSelectAllTags}
+            >
+              {selectedTagIds.length === filteredTags.length 
+                ? "Desselecionar Todas" 
+                : "Selecionar Todas"}
+            </Button>
           </div>
         </div>
         
@@ -352,81 +321,56 @@ export function TagTable() {
           />
         </div>
         
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={selectedTagIds.includes(row.original.id) ? "selected" : undefined}
-                    className={`cursor-pointer ${selectedTagIds.includes(row.original.id) ? "bg-muted/50" : ""}`}
-                    onClick={() => toggleTagSelection(row.original.id)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    Nenhuma tag encontrada.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        {/* Grid de cards de tags */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {paginatedTags.length > 0 ? (
+            paginatedTags.map(tag => (
+              <TagCard 
+                key={tag.id}
+                tag={tag}
+                isSelected={selectedTagIds.includes(tag.id)}
+                onToggleSelect={toggleTagSelection}
+                onEdit={handleEditTag}
+                onDelete={handleDeleteSingleTag}
+              />
+            ))
+          ) : (
+            <div className="col-span-full p-8 text-center text-muted-foreground">
+              Nenhuma tag encontrada.
+            </div>
+          )}
         </div>
+        
+        {/* Paginação e contador */}
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
             {selectedTagIds.length} de{" "}
-            {filteredRowCount} tag(s) selecionada(s).
+            {filteredTags.length} tag(s) selecionada(s).
           </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Próxima
-            </Button>
-          </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                disabled={currentPage === 0}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm">
+                Página {currentPage + 1} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
