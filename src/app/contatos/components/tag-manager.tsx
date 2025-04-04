@@ -31,15 +31,17 @@ import { toast } from "sonner"
 interface TagItemProps {
   tag: Tag
   isAssigned: boolean
+  isPartial?: boolean
   onToggle: (tagId: string, assigned: boolean) => void
 }
 
-function TagItem({ tag, isAssigned, onToggle }: TagItemProps) {
+function TagItem({ tag, isAssigned, isPartial = false, onToggle }: TagItemProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 p-3 rounded-md border border-transparent transition-all",
-        isAssigned && "bg-muted/30"
+        "flex items-center gap-2 p-3 rounded-md border border-transparent transition-all hover:bg-muted/20",
+        isAssigned && "bg-muted/30",
+        isPartial && "border-dashed border-muted-foreground/30"
       )}
     >
       <Checkbox
@@ -53,8 +55,19 @@ function TagItem({ tag, isAssigned, onToggle }: TagItemProps) {
       >
         {tag.nome}
       </Badge>
-      <span className="text-sm text-muted-foreground ml-auto">
-        {isAssigned ? "Atribuída" : "Não atribuída"}
+      <span className={cn(
+        "text-sm ml-auto",
+        isPartial 
+          ? "text-amber-500 dark:text-amber-400" 
+          : isAssigned 
+            ? "text-green-600 dark:text-green-500" 
+            : "text-muted-foreground"
+      )}>
+        {isAssigned 
+          ? isPartial 
+            ? "Parcialmente atribuída" 
+            : "Atribuída a todos" 
+          : "Não atribuída"}
       </span>
     </div>
   )
@@ -99,8 +112,20 @@ export function TagManager() {
     )
     
     setAssignedTagIds(commonTags.map(tag => tag.id))
-    setUnassignedTagIds([])
+    
+    // Tags que não estão em nenhum dos contatos selecionados
+    const unusedTags = tags.filter(tag => 
+      !commonTags.some(t => t.id === tag.id) && 
+      !partialTags.some(t => t.id === tag.id)
+    )
+    
+    setUnassignedTagIds(unusedTags.map(tag => tag.id))
+    
+    // Guardar as tags parciais para referência visual
+    setPartialTagIds(partialTags.map(tag => tag.id))
   }, [selectedContatosData, tags])
+  
+  const [partialTagIds, setPartialTagIds] = useState<string[]>([])
   
   const filteredTags = useMemo(() => {
     if (!searchTerm) return tags
@@ -112,16 +137,36 @@ export function TagManager() {
   
   // Gerenciar a alteração nos checkboxes
   const handleTagToggle = (tagId: string, isAssigned: boolean) => {
+    const isPartialTag = partialTagIds.includes(tagId)
+    
     if (isAssigned) {
+      // Se a tag estiver sendo marcada
+      if (isPartialTag) {
+        // Se for uma tag parcial, remove da lista de parciais
+        setPartialTagIds(prev => prev.filter(id => id !== tagId))
+      }
+      
       // Adicionar à lista de tags atribuídas
-      setAssignedTagIds(prev => [...prev, tagId])
+      if (!assignedTagIds.includes(tagId)) {
+        setAssignedTagIds(prev => [...prev, tagId])
+      }
+      
       // Remover da lista de tags não atribuídas
       setUnassignedTagIds(prev => prev.filter(id => id !== tagId))
     } else {
+      // Se a tag estiver sendo desmarcada
       // Remover da lista de tags atribuídas
       setAssignedTagIds(prev => prev.filter(id => id !== tagId))
-      // Adicionar à lista de tags não atribuídas
-      setUnassignedTagIds(prev => [...prev, tagId])
+      
+      // Adicionar à lista de tags não atribuídas se ainda não estiver lá
+      if (!unassignedTagIds.includes(tagId)) {
+        setUnassignedTagIds(prev => [...prev, tagId])
+      }
+      
+      // Se for uma tag parcial, remove da lista de parciais
+      if (isPartialTag) {
+        setPartialTagIds(prev => prev.filter(id => id !== tagId))
+      }
     }
   }
   
@@ -132,28 +177,48 @@ export function TagManager() {
       return
     }
     
-    if (assignedTagIds.length === 0 && unassignedTagIds.length === 0) {
-      toast.warning("Nenhuma alteração para salvar")
-      return
-    }
-    
     setSaving(true)
     
     try {
+      // Obter todas as tags dos contatos antes da alteração
+      const initialTagsByContato = new Map<string, Set<string>>()
+      selectedContatosData.forEach(contato => {
+        initialTagsByContato.set(
+          contato.id, 
+          new Set(contato.tags.map(tag => tag.id))
+        )
+      })
+      
+      // Tags para adicionar - as marcadas que não estavam originalmente em todos os contatos
+      const tagsToAdd = assignedTagIds.filter(tagId => 
+        selectedContatosData.some(contato => 
+          !contato.tags.some(tag => tag.id === tagId)
+        )
+      )
+      
+      // Tags para remover - as não marcadas que estavam em algum contato
+      const tagsToRemove = unassignedTagIds.filter(tagId => 
+        selectedContatosData.some(contato => 
+          contato.tags.some(tag => tag.id === tagId)
+        )
+      )
+      
       // Processar tags para adicionar
-      if (assignedTagIds.length > 0) {
-        await addTagsToSelectedContatos(assignedTagIds)
+      if (tagsToAdd.length > 0) {
+        await addTagsToSelectedContatos(tagsToAdd)
       }
       
       // Processar tags para remover
-      if (unassignedTagIds.length > 0) {
-        await removeTagsFromSelectedContatos(unassignedTagIds)
+      if (tagsToRemove.length > 0) {
+        await removeTagsFromSelectedContatos(tagsToRemove)
       }
       
-      setAssignedTagIds([])
-      setUnassignedTagIds([])
-      
-      toast.success(`Tags atualizadas para ${selectedContatos.length} contato(s)`)
+      // Mostrar mensagem de sucesso apropriada
+      if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
+        toast.success(`Tags atualizadas para ${selectedContatos.length} contato(s)`)
+      } else {
+        toast.info("Nenhuma alteração em tags foi detectada")
+      }
     } catch (error) {
       console.error("Erro ao salvar tags:", error)
       toast.error("Erro ao salvar as alterações nas tags")
@@ -205,6 +270,18 @@ export function TagManager() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {selectedContatos.length > 1 && (
+            <div className="bg-muted/30 rounded-lg p-3 text-sm border border-muted">
+              <p className="font-medium mb-1">Gerenciando tags para múltiplos contatos</p>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>Tags <span className="text-green-600 dark:text-green-500">atribuídas a todos</span> os contatos estão marcadas</li>
+                <li>Tags <span className="text-amber-500 dark:text-amber-400">parcialmente atribuídas</span> estão presentes em alguns contatos, mas não todos</li>
+                <li>Ao marcar uma tag, ela será adicionada a todos os contatos selecionados</li>
+                <li>Ao desmarcar uma tag, ela será removida de todos os contatos selecionados</li>
+              </ul>
+            </div>
+          )}
+          
           <div className="relative">
             <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -235,6 +312,7 @@ export function TagManager() {
                   key={tag.id}
                   tag={tag}
                   isAssigned={assignedTagIds.includes(tag.id)}
+                  isPartial={partialTagIds.includes(tag.id)}
                   onToggle={handleTagToggle}
                 />
               ))}
