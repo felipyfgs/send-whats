@@ -17,26 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { ContatoDetailDialog } from "./contato-detail-dialog"
-
-// Definição do tipo de dados para tags
-export type Tag = {
-  id: string
-  nome: string
-  cor: string
-}
-
-// Definição do tipo de dados para contatos
-export type Contato = {
-  id: string
-  nome: string
-  email: string | null
-  telefone: string | null
-  categoria: "pessoal" | "trabalho" | "familia" | "outro"
-  tags: Tag[]
-  empresa: string | null
-  cargo: string | null
-  observacoes: string | null
-}
+import { Contato, Tag } from "../types"
 
 // Componente para as células com ações do contato
 function ActionsCell({ contato }: { contato: Contato }) {
@@ -46,12 +27,12 @@ function ActionsCell({ contato }: { contato: Contato }) {
   const handleDelete = useCallback(async () => {
     try {
       await deleteContato(contato.id)
-      toast.success(`O contato ${contato.nome} foi excluído com sucesso`)
+      toast.success(`O contato ${contato.name} foi excluído com sucesso`)
     } catch (error) {
       toast.error("Não foi possível excluir o contato")
       console.error("Erro ao excluir contato:", error)
     }
-  }, [contato.id, contato.nome, deleteContato])
+  }, [contato.id, contato.name, deleteContato])
 
   const handleViewDetails = useCallback(() => {
     setShowDetailDialog(true)
@@ -61,8 +42,8 @@ function ActionsCell({ contato }: { contato: Contato }) {
     // Seleciona apenas este contato para gerenciar tags
     setSelectedContatos([contato.id])
     // Implementação futura da gestão de tags individual
-    toast(`Use os botões de ação acima para gerenciar as tags de ${contato.nome}`)
-  }, [contato.id, contato.nome, setSelectedContatos])
+    toast(`Use os botões de ação acima para gerenciar as tags de ${contato.name}`)
+  }, [contato.id, contato.name, setSelectedContatos])
 
   const copyToClipboard = useCallback((text: string | null | undefined, message: string) => {
     if (text === null || text === undefined || text === "") {
@@ -105,7 +86,7 @@ function ActionsCell({ contato }: { contato: Contato }) {
             Copiar email
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => copyToClipboard(
-              contato.telefone,
+              contato.phone,
               "Telefone copiado para a área de transferência"
             )}
           >
@@ -142,10 +123,10 @@ function TagsCell({ tags }: { tags: Tag[] }) {
         tags.map((tag) => (
           <Badge 
             key={tag.id} 
-            style={{ backgroundColor: tag.cor }}
+            style={{ backgroundColor: tag.color }}
             className="text-white"
           >
-            {tag.nome}
+            {tag.name}
           </Badge>
         ))
       ) : (
@@ -180,7 +161,7 @@ export const columns: ColumnDef<Contato>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "nome",
+    accessorKey: "name",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -193,7 +174,7 @@ export const columns: ColumnDef<Contato>[] = [
     cell: ({ row }) => (
       <div className="flex items-center">
         <User className="mr-2 h-4 w-4 text-muted-foreground" />
-        <span>{row.getValue("nome")}</span>
+        <span>{row.getValue("name")}</span>
       </div>
     ),
   },
@@ -216,20 +197,20 @@ export const columns: ColumnDef<Contato>[] = [
     ),
   },
   {
-    accessorKey: "telefone",
+    accessorKey: "phone",
     header: "Telefone",
     cell: ({ row }) => (
       <div className="flex items-center">
         <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-        <span>{row.getValue("telefone")}</span>
+        <span>{row.getValue("phone")}</span>
       </div>
     ),
   },
   {
-    accessorKey: "categoria",
+    accessorKey: "category",
     header: "Categoria",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("categoria")}</div>
+      <div className="capitalize">{row.getValue("category")}</div>
     ),
   },
   {
