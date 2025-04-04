@@ -52,7 +52,10 @@ import {
 import { TagFormDialog } from "./tag-form-dialog"
 
 export function TagTable() {
+  // 1. Contexto (useContext)
   const { tags, updateTag, deleteTag } = useContatos()
+  
+  // 2. Estados (useState) - Colocar todos os estados juntos
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -61,6 +64,7 @@ export function TagTable() {
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
 
+  // 3. Memos (useMemo)
   // Definição das colunas da tabela
   const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
     {
@@ -146,6 +150,38 @@ export function TagTable() {
     },
   ], [])
 
+  // Configuração da tabela
+  const table = React.useMemo(() => useReactTable({
+    data: tags,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
+
+  // Valores derivados
+  const filteredSelectedRowCount = React.useMemo(
+    () => table.getFilteredSelectedRowModel().rows.length,
+    [table]
+  )
+  
+  const filteredRowCount = React.useMemo(
+    () => table.getFilteredRowModel().rows.length,
+    [table]
+  )
+
+  // 4. Callbacks (useCallback)
   const handleEditTag = React.useCallback((tag: Tag) => {
     setEditingTag(tag)
     setShowTagForm(true)
@@ -214,35 +250,7 @@ export function TagTable() {
     }
   }, [deleteTag, rowSelection, tags])
 
-  const table = React.useMemo(() => useReactTable({
-    data: tags,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
-
-  const filteredSelectedRowCount = React.useMemo(
-    () => table.getFilteredSelectedRowModel().rows.length,
-    [table]
-  )
-  
-  const filteredRowCount = React.useMemo(
-    () => table.getFilteredRowModel().rows.length,
-    [table]
-  )
-
+  // 5. Renderização
   return (
     <>
       <div className="w-full">
@@ -259,7 +267,7 @@ export function TagTable() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {table.getFilteredSelectedRowModel().rows.length > 0 && (
+            {filteredSelectedRowCount > 0 && (
               <Button 
                 variant="destructive" 
                 size="sm"
