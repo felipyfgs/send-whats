@@ -54,6 +54,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TagTable } from "./tag-table"
+import React from "react"
 
 interface TagItemProps {
   tag: Tag
@@ -65,7 +66,8 @@ interface TagItemProps {
   allowManage?: boolean
 }
 
-function TagItem({ 
+// Extrair o componente TagItem para um componente separado
+const TagItem = React.memo(({ 
   tag, 
   isAssigned, 
   isPartial = false, 
@@ -73,8 +75,30 @@ function TagItem({
   onEdit,
   onDelete,
   allowManage = false
-}: TagItemProps) {
+}: TagItemProps) => {
+  // Garantir que o hook sempre é chamado
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
+
+  const handleEditClick = React.useCallback(() => {
+    if (onEdit) {
+      onEdit(tag)
+    }
+  }, [onEdit, tag])
+
+  const handleDeleteClick = React.useCallback(() => {
+    setShowDeleteAlert(true)
+  }, [])
+
+  const handleConfirmDelete = React.useCallback(() => {
+    if (onDelete) {
+      onDelete(tag.id)
+    }
+    setShowDeleteAlert(false)
+  }, [onDelete, tag.id])
+
+  const handleCheckChange = React.useCallback((checked: boolean) => {
+    onToggle(tag.id, checked)
+  }, [onToggle, tag.id])
 
   return (
     <>
@@ -88,7 +112,7 @@ function TagItem({
         <Checkbox
           id={`tag-${tag.id}`}
           checked={isAssigned}
-          onCheckedChange={(checked) => onToggle(tag.id, checked as boolean)}
+          onCheckedChange={(checked) => handleCheckChange(checked as boolean)}
         />
         <Badge
           style={{ backgroundColor: tag.cor }}
@@ -119,13 +143,13 @@ function TagItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit?.(tag)}>
+              <DropdownMenuItem onClick={handleEditClick}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-destructive focus:text-destructive"
-                onClick={() => setShowDeleteAlert(true)}
+                onClick={handleDeleteClick}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
@@ -148,10 +172,7 @@ function TagItem({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => {
-                onDelete?.(tag.id)
-                setShowDeleteAlert(false)
-              }}
+              onClick={handleConfirmDelete}
             >
               Excluir
             </AlertDialogAction>
@@ -160,7 +181,9 @@ function TagItem({
       </AlertDialog>
     </>
   )
-}
+});
+
+TagItem.displayName = "TagItem";
 
 export function TagManager() {
   const { 

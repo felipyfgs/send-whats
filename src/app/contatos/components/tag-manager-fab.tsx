@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { TagIcon } from "lucide-react"
 import {
@@ -22,6 +22,15 @@ interface TagManagerFabProps {
 export function TagManagerFab({ className }: TagManagerFabProps) {
   const [open, setOpen] = useState(false)
   
+  // Extrair handlers para o nível superior
+  const handleOpenDialog = useCallback(() => {
+    setOpen(true)
+  }, [])
+  
+  const handleCloseDialog = useCallback(() => {
+    setOpen(false)
+  }, [])
+  
   return (
     <>
       <TooltipProvider>
@@ -34,7 +43,7 @@ export function TagManagerFab({ className }: TagManagerFabProps) {
                 "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-10 bg-primary hover:bg-primary/90 hover:scale-105 transition-transform",
                 className
               )}
-              onClick={() => setOpen(true)}
+              onClick={handleOpenDialog}
             >
               <TagIcon className="h-6 w-6 text-primary-foreground" />
             </Button>
@@ -59,7 +68,7 @@ export function TagManagerFab({ className }: TagManagerFabProps) {
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={handleCloseDialog}>
               Fechar
             </Button>
           </DialogFooter>

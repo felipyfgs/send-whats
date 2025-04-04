@@ -51,6 +51,38 @@ import {
 } from "@/components/ui/alert-dialog"
 import { TagFormDialog } from "./tag-form-dialog"
 
+// Extrair o componente de ação de tag para evitar hooks dentro de renderização
+const TagActionCell = React.memo(
+  ({ tag, onEdit, onDelete }: { tag: Tag; onEdit: (tag: Tag) => void; onDelete: (id: string) => void }) => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Abrir menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => onEdit(tag)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Editar Tag
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => onDelete(tag.id)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Excluir Tag
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+);
+TagActionCell.displayName = "TagActionCell";
+
 export function TagTable() {
   // 1. Contexto (useContext)
   const { tags, updateTag, deleteTag } = useContatos()
@@ -64,124 +96,7 @@ export function TagTable() {
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
 
-  // 3. Memos (useMemo)
-  // Definição das colunas da tabela
-  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Nome
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Badge 
-            style={{ backgroundColor: row.original.cor }}
-            className="text-white px-3 py-1"
-          >
-            {row.getValue("nome")}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const tag = row.original
-        
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => handleEditTag(tag)}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar Tag
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleDeleteSingleTag(tag.id)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Excluir Tag
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ], [])
-
-  // Configuração da tabela
-  const table = React.useMemo(() => useReactTable({
-    data: tags,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
-
-  // Valores derivados
-  const filteredSelectedRowCount = React.useMemo(
-    () => table.getFilteredSelectedRowModel().rows.length,
-    [table]
-  )
-  
-  const filteredRowCount = React.useMemo(
-    () => table.getFilteredRowModel().rows.length,
-    [table]
-  )
-
-  // 4. Callbacks (useCallback)
+  // 4. Callbacks (useCallback) - Movendo os callbacks para antes dos memos que dependem deles
   const handleEditTag = React.useCallback((tag: Tag) => {
     setEditingTag(tag)
     setShowTagForm(true)
@@ -249,6 +164,112 @@ export function TagTable() {
       toast.error("Erro ao excluir as tags selecionadas")
     }
   }, [deleteTag, rowSelection, tags])
+
+  // 3. Memos (useMemo)
+  // Definição das colunas da tabela
+  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Selecionar todas"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Selecionar linha"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "nome",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Nome
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Badge 
+            style={{ backgroundColor: row.original.cor }}
+            className="text-white px-3 py-1"
+          >
+            {row.getValue("nome")}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
+      },
+    },
+  ], [handleEditTag, handleDeleteSingleTag])
+
+  // Configuração da tabela
+  const table = React.useMemo(() => useReactTable({
+    data: tags,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  }), [tags, columns, sorting, columnFilters, columnVisibility, rowSelection])
+
+  // Valores derivados
+  const filteredSelectedRowCount = React.useMemo(
+    () => table.getFilteredSelectedRowModel().rows.length,
+    [table]
+  )
+  
+  const filteredRowCount = React.useMemo(
+    () => table.getFilteredRowModel().rows.length,
+    [table]
+  )
+
+  // Função de manipulação do formulário - extraída para fora do JSX
+  const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
+    if (editingTag) {
+      updateTag({
+        id: editingTag.id,
+        ...tagData
+      }).then(() => {
+        toast.success("Tag atualizada com sucesso")
+      }).catch((error) => {
+        console.error("Erro ao atualizar tag:", error)
+        toast.error("Erro ao atualizar a tag")
+      })
+    }
+    setShowTagForm(false)
+    setEditingTag(null)
+  }, [editingTag, updateTag])
 
   // 5. Renderização
   return (
@@ -407,21 +428,7 @@ export function TagTable() {
       {showTagForm && (
         <TagFormDialog
           tag={editingTag}
-          onSave={(tagData) => {
-            if (editingTag) {
-              updateTag({
-                id: editingTag.id,
-                ...tagData
-              }).then(() => {
-                toast.success("Tag atualizada com sucesso")
-              }).catch((error) => {
-                console.error("Erro ao atualizar tag:", error)
-                toast.error("Erro ao atualizar a tag")
-              })
-            }
-            setShowTagForm(false)
-            setEditingTag(null)
-          }}
+          onSave={handleTagFormSave}
         />
       )}
     </>
