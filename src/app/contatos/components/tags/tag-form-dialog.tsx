@@ -19,9 +19,10 @@ interface TagFormDialogProps {
   children?: React.ReactNode
   tag?: Tag | null
   triggerButton?: React.ReactNode
+  onOpenChange?: (open: boolean) => void
 }
 
-export function TagFormDialog({ onSave, children, tag = null, triggerButton }: TagFormDialogProps) {
+export function TagFormDialog({ onSave, children, tag = null, triggerButton, onOpenChange }: TagFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [color, setColor] = useState("#3b82f6")
@@ -45,6 +46,11 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton }: T
     }
   }
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  }
+
   // Se não tiver children nem triggerButton, usar botão padrão
   const defaultTrigger = (
     <Button size="sm">Nova Tag</Button>
@@ -54,7 +60,7 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton }: T
   const trigger = triggerButton || children || defaultTrigger
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>

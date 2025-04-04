@@ -6,33 +6,15 @@ import { Tag } from "../types"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { 
   SearchIcon, 
-  TagIcon, 
-  Plus, 
   X, 
   Save, 
   Pencil, 
   Trash2, 
   Settings, 
-  AlertTriangle
+  Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TagFormDialog } from "./tag-form-dialog"
@@ -66,7 +48,7 @@ interface TagItemProps {
   allowManage?: boolean
 }
 
-// Extrair o componente TagItem para um componente separado
+// Componente TagItem
 const TagItem = React.memo(({ 
   tag, 
   isAssigned, 
@@ -76,7 +58,6 @@ const TagItem = React.memo(({
   onDelete,
   allowManage = false
 }: TagItemProps) => {
-  // Garantir que o hook sempre é chamado
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
   const handleEditClick = React.useCallback(() => {
@@ -97,14 +78,14 @@ const TagItem = React.memo(({
   }, [onDelete, tag.id])
 
   const handleCheckChange = React.useCallback((checked: boolean) => {
-    onToggle(tag.id, checked)
+    onToggle(tag.id, checked as boolean)
   }, [onToggle, tag.id])
 
   return (
     <>
       <div
         className={cn(
-          "flex items-center gap-2 p-3 rounded-md border border-transparent transition-all hover:bg-muted/20",
+          "flex items-center gap-2 p-2 rounded-md border border-transparent transition-all hover:bg-muted/20 mb-1",
           isAssigned && "bg-muted/30",
           isPartial && "border-dashed border-muted-foreground/30"
         )}
@@ -115,11 +96,12 @@ const TagItem = React.memo(({
           onCheckedChange={(checked) => handleCheckChange(checked as boolean)}
         />
         <Badge
-          style={{ backgroundColor: tag.cor }}
+          style={{ backgroundColor: tag.color }}
           className="text-white px-3 py-1"
         >
-          {tag.nome}
+          {tag.name}
         </Badge>
+        
         <span className={cn(
           "text-sm ml-auto",
           isPartial 
@@ -138,7 +120,7 @@ const TagItem = React.memo(({
         {allowManage && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 ml-1">
                 <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -164,7 +146,7 @@ const TagItem = React.memo(({
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A tag "{tag.nome}" será removida
+              Esta ação não pode ser desfeita. A tag "{tag.name}" será removida
               permanentemente e desvinculada de todos os contatos.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -245,7 +227,7 @@ export function TagManager() {
     if (!searchTerm) return tags
     
     return tags.filter(tag => 
-      tag.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      tag.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [tags, searchTerm])
   
@@ -355,157 +337,152 @@ export function TagManager() {
     }
   }
   
-  // Renderizar o componente apropriado com base no estado atual
+  // Rendering component without selected contacts
   if (selectedContatos.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciar Tags</CardTitle>
-          <CardDescription>
-            Gerencie todas as tags do sistema
-          </CardDescription>
-          <div className="flex justify-end mt-2">
-            <TagFormDialog
-              onSave={(tagData) => {
-                createTag(tagData)
-              }}
-            />
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Gerenciar Tags</h2>
+            <p className="text-sm text-muted-foreground">
+              Gerencie todas as tags do sistema
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <TagTable />
-          </div>
-        </CardContent>
-      </Card>
+          <TagFormDialog
+            onSave={(tagData) => {
+              createTag(tagData)
+            }}
+          />
+        </div>
+        <TagTable />
+      </div>
     )
   }
   
+  // Renderizar o componente de atribuição de tags a contatos
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-start">
+    <div>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-semibold">Gerenciar Tags</h2>
+          <p className="text-sm text-muted-foreground">
+            {selectedContatos.length === 1 
+              ? `Gerenciando tags para 1 contato` 
+              : `Gerenciando tags para ${selectedContatos.length} contatos`}
+          </p>
+        </div>
+        <TagFormDialog
+          onSave={(tagData) => {
+            createTag(tagData)
+          }}
+        />
+      </div>
+      
+      {selectedContatos.length > 1 && (
+        <div className="bg-muted/30 rounded-lg p-3 text-sm border border-muted flex items-start gap-2 mb-4">
+          <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
           <div>
-            <CardTitle>Gerenciar Tags</CardTitle>
-            <CardDescription>
-              {selectedContatos.length === 1 
-                ? `Gerenciando tags para 1 contato` 
-                : `Gerenciando tags para ${selectedContatos.length} contatos`}
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <TagFormDialog
-              onSave={(tagData) => {
-                createTag(tagData)
-              }}
-            />
+            <p className="font-medium mb-1">Gerenciando tags para múltiplos contatos</p>
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+              <li>Tags <span className="text-green-600 dark:text-green-500">atribuídas a todos</span> os contatos estão marcadas</li>
+              <li>Tags <span className="text-amber-500 dark:text-amber-400">parcialmente atribuídas</span> estão presentes em alguns contatos, mas não todos</li>
+              <li>Ao marcar uma tag, ela será adicionada a todos os contatos selecionados</li>
+              <li>Ao desmarcar uma tag, ela será removida de todos os contatos selecionados</li>
+            </ul>
           </div>
         </div>
-      </CardHeader>
+      )}
       
-      <CardContent>
-        <div className="space-y-4">
-          {selectedContatos.length > 1 && (
-            <div className="bg-muted/30 rounded-lg p-3 text-sm border border-muted">
-              <p className="font-medium mb-1">Gerenciando tags para múltiplos contatos</p>
-              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                <li>Tags <span className="text-green-600 dark:text-green-500">atribuídas a todos</span> os contatos estão marcadas</li>
-                <li>Tags <span className="text-amber-500 dark:text-amber-400">parcialmente atribuídas</span> estão presentes em alguns contatos, mas não todos</li>
-                <li>Ao marcar uma tag, ela será adicionada a todos os contatos selecionados</li>
-                <li>Ao desmarcar uma tag, ela será removida de todos os contatos selecionados</li>
-              </ul>
-            </div>
-          )}
-          
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4"
-            />
-            {searchTerm && (
-              <button
-                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-                onClick={() => setSearchTerm("")}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+      <div className="relative mb-3">
+        <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar tags..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 pr-4"
+        />
+        {searchTerm && (
+          <button
+            className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+            onClick={() => setSearchTerm("")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      
+      <div className="h-[300px] overflow-y-auto pr-1 mt-2">
+        {filteredTags.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <p>Nenhuma tag encontrada com este termo</p>
           </div>
-          
-          <div className="space-y-1 max-h-[calc(80vh-280px)] overflow-y-auto pr-1">
-            {filteredTags.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Nenhuma tag encontrada com este termo</p>
+        ) : (
+          <div className="space-y-4">
+            {/* Tags atribuídas a todos os contatos */}
+            {assignedTagIds.length > 0 && (
+              <div className="bg-muted/10 rounded-lg pt-2 pb-1 px-1">
+                <h3 className="text-sm font-medium text-primary mb-2 px-2">Atribuídas a todos</h3>
+                {filteredTags
+                  .filter(tag => assignedTagIds.includes(tag.id))
+                  .map(tag => (
+                    <TagItem
+                      key={tag.id}
+                      tag={tag}
+                      isAssigned={true}
+                      onToggle={handleTagToggle}
+                      onEdit={handleEditTag}
+                      onDelete={handleDeleteTag}
+                      allowManage={true}
+                    />
+                  ))}
               </div>
-            ) : (
-              <>
-                {/* Tags atribuídas a todos os contatos */}
-                {assignedTagIds.length > 0 && (
-                  <div className="space-y-1">
-                    {filteredTags
-                      .filter(tag => assignedTagIds.includes(tag.id))
-                      .map(tag => (
-                        <TagItem
-                          key={tag.id}
-                          tag={tag}
-                          isAssigned={true}
-                          onToggle={handleTagToggle}
-                          onEdit={handleEditTag}
-                          onDelete={handleDeleteTag}
-                          allowManage={true}
-                        />
-                      ))}
-                  </div>
-                )}
-                
-                {/* Tags parcialmente atribuídas */}
-                {partialTagIds.length > 0 && (
-                  <div className="space-y-1 mt-3">
-                    {filteredTags
-                      .filter(tag => partialTagIds.includes(tag.id))
-                      .map(tag => (
-                        <TagItem
-                          key={tag.id}
-                          tag={tag}
-                          isAssigned={false}
-                          isPartial={true}
-                          onToggle={handleTagToggle}
-                          onEdit={handleEditTag}
-                          onDelete={handleDeleteTag}
-                          allowManage={true}
-                        />
-                      ))}
-                  </div>
-                )}
-                
-                {/* Tags não atribuídas */}
-                {unassignedTagIds.length > 0 && (
-                  <div className="space-y-1 mt-3">
-                    {filteredTags
-                      .filter(tag => unassignedTagIds.includes(tag.id))
-                      .map(tag => (
-                        <TagItem
-                          key={tag.id}
-                          tag={tag}
-                          isAssigned={false}
-                          onToggle={handleTagToggle}
-                          onEdit={handleEditTag}
-                          onDelete={handleDeleteTag}
-                          allowManage={true}
-                        />
-                      ))}
-                  </div>
-                )}
-              </>
+            )}
+            
+            {/* Tags parcialmente atribuídas */}
+            {partialTagIds.length > 0 && (
+              <div className="bg-muted/10 rounded-lg pt-2 pb-1 px-1">
+                <h3 className="text-sm font-medium text-amber-500 dark:text-amber-400 mb-2 px-2">Parcialmente atribuídas</h3>
+                {filteredTags
+                  .filter(tag => partialTagIds.includes(tag.id))
+                  .map(tag => (
+                    <TagItem
+                      key={tag.id}
+                      tag={tag}
+                      isAssigned={false}
+                      isPartial={true}
+                      onToggle={handleTagToggle}
+                      onEdit={handleEditTag}
+                      onDelete={handleDeleteTag}
+                      allowManage={true}
+                    />
+                  ))}
+              </div>
+            )}
+            
+            {/* Tags não atribuídas */}
+            {unassignedTagIds.length > 0 && (
+              <div className="bg-muted/10 rounded-lg pt-2 pb-1 px-1">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 px-2">Não atribuídas</h3>
+                {filteredTags
+                  .filter(tag => unassignedTagIds.includes(tag.id))
+                  .map(tag => (
+                    <TagItem
+                      key={tag.id}
+                      tag={tag}
+                      isAssigned={false}
+                      onToggle={handleTagToggle}
+                      onEdit={handleEditTag}
+                      onDelete={handleDeleteTag}
+                      allowManage={true}
+                    />
+                  ))}
+              </div>
             )}
           </div>
-        </div>
-      </CardContent>
+        )}
+      </div>
       
-      <CardFooter className="justify-between">
+      <div className="flex justify-between mt-4">
         <Button
           variant="outline"
           onClick={() => {
@@ -523,9 +500,9 @@ export function TagManager() {
           <Save className="h-4 w-4 mr-2" />
           {saving ? "Salvando..." : "Salvar Alterações"}
         </Button>
-      </CardFooter>
+      </div>
       
-      {/* Diálogo para editar tag */}
+      {/* Diálogo unificado para criação e edição de tags */}
       {editingTag && (
         <TagFormDialog
           tag={editingTag}
@@ -536,8 +513,11 @@ export function TagManager() {
             })
             setEditingTag(null)
           }}
+          onOpenChange={(open) => {
+            if (!open) setEditingTag(null)
+          }}
         />
       )}
-    </Card>
+    </div>
   )
 } 
