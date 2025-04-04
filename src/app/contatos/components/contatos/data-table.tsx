@@ -44,7 +44,7 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchField = "nome",
+  searchField = "name",
   searchPlaceholder = "Filtrar por nome...",
   emptyMessage = "Nenhum resultado encontrado."
 }: DataTableProps<TData, TValue>) {

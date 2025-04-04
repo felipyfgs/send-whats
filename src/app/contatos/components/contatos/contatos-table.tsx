@@ -22,7 +22,7 @@ export function ContatosTable() {
     <DataTable
       columns={columns}
       data={contatos}
-      searchField="nome"
+      searchField="name"
       searchPlaceholder="Buscar contatos..."
       emptyMessage="Nenhum contato encontrado"
     />
