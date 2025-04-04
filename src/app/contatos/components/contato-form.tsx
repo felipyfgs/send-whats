@@ -1,11 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Contato, Tag } from "./columns"
+import { Tag } from "./columns"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { TagSelectorTable } from "./tag-selector-table"
-import { TagFormDialog } from "./tag-form-dialog"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, SubmitHandler } from "react-hook-form"
 import * as z from "zod"
 
-interface DbContato {
+interface ContatoBase {
   id?: string
   nome: string
   telefone: string | null
@@ -37,7 +36,6 @@ interface DbContato {
   empresa: string | null
   cargo: string | null
   observacoes: string | null
-  status: string
   categoria: "pessoal" | "trabalho" | "familia" | "outro"
 }
 
@@ -52,15 +50,14 @@ const contatoSchema = z.object({
 })
 
 interface ContatoFormProps {
-  contato?: DbContato & { tags?: Tag[] }
+  contato?: ContatoBase & { tags?: Tag[] }
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) {
-  const { createContato, updateContato, tags, createTag } = useContatos()
+  const { createContato, updateContato, tags } = useContatos()
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
-  const [showTagDialog, setShowTagDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const isEditing = !!contato
 
@@ -300,25 +297,6 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           </Button>
         </div>
       </form>
-      
-      {showTagDialog && (
-        <TagFormDialog 
-          onSave={(newTag) => {
-            createTag(newTag);
-            setShowTagDialog(false);
-          }}
-          triggerButton={
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowTagDialog(false)}
-            >
-              Cancelar
-            </Button>
-          }
-        />
-      )}
     </Form>
   )
 }
