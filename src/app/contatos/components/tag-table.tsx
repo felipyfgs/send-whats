@@ -96,65 +96,7 @@ export function TagTable() {
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
   
-  // 3. Memos (useMemo) - Todos os useMemo juntos
-  // Definição das colunas da tabela
-  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Nome
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Badge 
-            style={{ backgroundColor: row.original.cor }}
-            className="text-white px-3 py-1"
-          >
-            {row.getValue("nome")}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
-      },
-    },
-  ], [handleEditTag, handleDeleteSingleTag])
-  
-  // 4. Callbacks (useCallback) - Todos os callbacks juntos
+  // 3. Callbacks (useCallback) - Definir antes dos memos que dependem deles
   const handleEditTag = React.useCallback((tag: Tag) => {
     setEditingTag(tag)
     setShowTagForm(true)
@@ -239,6 +181,64 @@ export function TagTable() {
     setShowTagForm(false)
     setEditingTag(null)
   }, [editingTag, updateTag])
+  
+  // 4. Memos (useMemo) - Todos os useMemo juntos
+  // Definição das colunas da tabela
+  const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Selecionar todas"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Selecionar linha"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "nome",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Nome
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Badge 
+            style={{ backgroundColor: row.original.cor }}
+            className="text-white px-3 py-1"
+          >
+            {row.getValue("nome")}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        return <TagActionCell tag={row.original} onEdit={handleEditTag} onDelete={handleDeleteSingleTag} />;
+      },
+    },
+  ], [handleEditTag, handleDeleteSingleTag])
 
   // Configuração da tabela
   const table = useReactTable({
@@ -298,33 +298,6 @@ export function TagTable() {
                 Excluir Selecionadas
               </Button>
             )}
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto">
-                  Colunas <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
         <div className="rounded-md border">
