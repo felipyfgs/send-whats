@@ -1,17 +1,7 @@
 "use client"
 
 import * as React from "react"
-import {
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown, CheckCircle, MoreHorizontal, Pencil, Plus, Search, Trash2, Check } from "lucide-react"
+import { CheckCircle, MoreHorizontal, Pencil, Plus, Search, Trash2, Check } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useContatos } from "@/contexts/contatos-context"
-import { Tag } from "./columns"
+import { Tag } from "../types"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -38,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TagFormDialog } from "./tag-form-dialog"
-import { MultiSelect, OptionType } from "./multi-select"
+import { MultiSelect, OptionType } from "../contatos/multi-select"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Componente para botão de ação da tag
@@ -96,10 +86,10 @@ const TagCard = React.memo(
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <Badge 
-              style={{ backgroundColor: tag.cor }}
+              style={{ backgroundColor: tag.color }}
               className="text-white px-3 py-1 text-sm"
             >
-              {tag.nome}
+              {tag.name}
             </Badge>
             
             <div className="flex items-center gap-1">
@@ -113,7 +103,7 @@ const TagCard = React.memo(
         <CardContent className="pt-0 pb-2">
           <div 
             className="w-full h-3 rounded-full" 
-            style={{ backgroundColor: tag.cor, opacity: 0.2 }}
+            style={{ backgroundColor: tag.color, opacity: 0.2 }}
           />
         </CardContent>
       </Card>
@@ -197,7 +187,7 @@ export function TagTable() {
   }, [deleteTag, selectedTagIds])
   
   // Função de manipulação do formulário
-  const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
+  const handleTagFormSave = React.useCallback((tagData: { name: string, color: string }) => {
     if (editingTag) {
       updateTag({
         id: editingTag.id,
@@ -247,7 +237,7 @@ export function TagTable() {
     
     const lowerQuery = searchQuery.toLowerCase();
     return tags.filter(tag => 
-      tag.nome.toLowerCase().includes(lowerQuery)
+      tag.name.toLowerCase().includes(lowerQuery)
     );
   }, [tags, searchQuery]);
   
@@ -255,8 +245,8 @@ export function TagTable() {
   const tagOptions = React.useMemo<OptionType[]>(() => {
     return tags.map(tag => ({
       value: tag.id,
-      label: tag.nome,
-      color: tag.cor
+      label: tag.name,
+      color: tag.color
     }))
   }, [tags])
   
