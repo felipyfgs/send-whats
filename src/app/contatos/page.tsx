@@ -18,6 +18,7 @@ import {
 import { ContatosTable } from "./components/contatos-table"
 import { ContatosProvider } from "@/contexts/contatos-context"
 import { ContatosActions } from "./components/contatos-actions"
+import { TagManagerFab } from "./components/tag-manager-fab"
 
 export const metadata: Metadata = {
   title: "Contatos | Meu App",
@@ -57,6 +58,7 @@ export default function ContatosPage() {
                 <ContatosTable />
               </div>
             </div>
+            <TagManagerFab />
           </main>
         </SidebarInset>
       </SidebarProvider>
