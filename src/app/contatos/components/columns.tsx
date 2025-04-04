@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { useContatos } from "@/contexts/contatos-context"
+import { useToast } from "@/hooks/use-toast"
 
 // Definição do tipo de dados para tags
 export type Tag = {
@@ -126,6 +128,42 @@ export const columns: ColumnDef<Contato>[] = [
     enableHiding: false,
     cell: ({ row }) => {
       const contato = row.original
+      const { deleteContato, selectContato, setSelectedContatos } = useContatos()
+      const { showToast } = useToast()
+
+      const handleDelete = async () => {
+        try {
+          await deleteContato(contato.id)
+          showToast({
+            title: "Contato excluído",
+            description: `O contato ${contato.nome} foi excluído com sucesso.`,
+          })
+        } catch (error) {
+          showToast({
+            title: "Erro ao excluir",
+            description: "Não foi possível excluir o contato. Tente novamente.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      const handleEdit = () => {
+        // Implementação futura da edição
+        showToast({
+          title: "Edição de contato",
+          description: `Edição do contato ${contato.nome} será implementada em breve.`,
+        })
+      }
+
+      const handleManageTags = () => {
+        // Seleciona apenas este contato para gerenciar tags
+        setSelectedContatos([contato.id])
+        // Implementação futura da gestão de tags individual
+        showToast({
+          title: "Gerenciar tags",
+          description: `Use os botões de ação acima para gerenciar as tags de ${contato.nome}.`,
+        })
+      }
 
       return (
         <DropdownMenu>
@@ -138,15 +176,32 @@ export const columns: ColumnDef<Contato>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(contato.id)}
+              onClick={() => {
+                navigator.clipboard.writeText(contato.id)
+                showToast({
+                  title: "ID copiado",
+                  description: "ID do contato copiado para a área de transferência.",
+                })
+              }}
             >
               Copiar ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Editar contato</DropdownMenuItem>
-            <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
-            <DropdownMenuItem>Gerenciar tags</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">Excluir contato</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleEdit}>
+              Editar contato
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              Ver detalhes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleManageTags}>
+              Gerenciar tags
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handleDelete}
+              className="text-destructive"
+            >
+              Excluir contato
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
