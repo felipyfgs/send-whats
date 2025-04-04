@@ -5,6 +5,7 @@ import { Contato, Tag } from "./columns"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { TagSelector } from "./tag-selector"
+import { Controller } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -168,21 +169,19 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="categoria"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoria</FormLabel>
+          <div className="space-y-2">
+            <FormLabel>Categoria</FormLabel>
+            <Controller
+              name="categoria"
+              control={form.control}
+              render={({ field }) => (
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value}
+                  defaultValue={field.value}
                 >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                  </FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pessoal">Pessoal</SelectItem>
                     <SelectItem value="trabalho">Trabalho</SelectItem>
@@ -190,10 +189,14 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
                     <SelectItem value="outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
+              )}
+            />
+            {form.formState.errors.categoria && (
+              <p className="text-sm font-medium text-destructive">
+                {form.formState.errors.categoria.message}
+              </p>
             )}
-          />
+          </div>
           
           <FormField
             control={form.control}
