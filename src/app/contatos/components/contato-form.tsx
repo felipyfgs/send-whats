@@ -177,7 +177,6 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
                 <Select
                   onValueChange={field.onChange}
                   value={field.value}
-                  defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
