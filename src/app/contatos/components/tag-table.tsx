@@ -84,10 +84,10 @@ const TagActionCell = React.memo(
 TagActionCell.displayName = "TagActionCell";
 
 export function TagTable() {
-  // 1. Contexto (useContext)
+  // 1. Contexto (useContext) - Sempre primeiro
   const { tags, updateTag, deleteTag } = useContatos()
   
-  // 2. Estados (useState) - Colocar todos os estados juntos
+  // 2. Estados (useState) - Todos os estados agrupados juntos
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -95,8 +95,8 @@ export function TagTable() {
   const [showDeleteAlert, setShowDeleteAlert] = React.useState(false)
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
   const [showTagForm, setShowTagForm] = React.useState(false)
-
-  // 4. Callbacks (useCallback) - Movendo os callbacks para antes dos memos que dependem deles
+  
+  // 3. Callbacks (useCallback) - Todos os callbacks juntos
   const handleEditTag = React.useCallback((tag: Tag) => {
     setEditingTag(tag)
     setShowTagForm(true)
@@ -164,8 +164,25 @@ export function TagTable() {
       toast.error("Erro ao excluir as tags selecionadas")
     }
   }, [deleteTag, rowSelection, tags])
+  
+  // Função de manipulação do formulário - mover para cima com os outros callbacks
+  const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
+    if (editingTag) {
+      updateTag({
+        id: editingTag.id,
+        ...tagData
+      }).then(() => {
+        toast.success("Tag atualizada com sucesso")
+      }).catch((error) => {
+        console.error("Erro ao atualizar tag:", error)
+        toast.error("Erro ao atualizar a tag")
+      })
+    }
+    setShowTagForm(false)
+    setEditingTag(null)
+  }, [editingTag, updateTag])
 
-  // 3. Memos (useMemo)
+  // 4. Memos (useMemo) - Todos os useMemo juntos
   // Definição das colunas da tabela
   const columns = React.useMemo<ColumnDef<Tag>[]>(() => [
     {
@@ -253,23 +270,6 @@ export function TagTable() {
     () => table.getFilteredRowModel().rows.length,
     [table]
   )
-
-  // Função de manipulação do formulário - extraída para fora do JSX
-  const handleTagFormSave = React.useCallback((tagData: { nome: string, cor: string }) => {
-    if (editingTag) {
-      updateTag({
-        id: editingTag.id,
-        ...tagData
-      }).then(() => {
-        toast.success("Tag atualizada com sucesso")
-      }).catch((error) => {
-        console.error("Erro ao atualizar tag:", error)
-        toast.error("Erro ao atualizar a tag")
-      })
-    }
-    setShowTagForm(false)
-    setEditingTag(null)
-  }, [editingTag, updateTag])
 
   // 5. Renderização
   return (
