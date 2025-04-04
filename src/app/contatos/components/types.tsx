@@ -3,19 +3,19 @@
 // Definição do tipo de dados para tags
 export type Tag = {
   id: string
-  nome: string
-  cor: string
+  name: string
+  color: string
 }
 
 // Definição do tipo de dados para contatos
 export type Contato = {
   id: string
-  nome: string
+  name: string
   email: string | null
-  telefone: string | null
-  categoria: "pessoal" | "trabalho" | "familia" | "outro"
+  phone: string | null
+  category: "personal" | "work" | "family" | "other"
   tags: Tag[]
-  empresa: string | null
-  cargo: string | null
-  observacoes: string | null
+  company: string | null
+  role: string | null
+  notes: string | null
 } 

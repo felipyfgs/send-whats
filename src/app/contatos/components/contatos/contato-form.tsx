@@ -30,23 +30,23 @@ import * as z from "zod"
 
 interface ContatoBase {
   id?: string
-  nome: string
-  telefone: string | null
+  name: string
+  phone: string | null
   email: string | null
-  empresa: string | null
-  cargo: string | null
-  observacoes: string | null
-  categoria: "pessoal" | "trabalho" | "familia" | "outro"
+  company: string | null
+  role: string | null
+  notes: string | null
+  category: "personal" | "work" | "family" | "other"
 }
 
 const contatoSchema = z.object({
-  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
-  telefone: z.string().min(8, "Telefone deve ter pelo menos 8 caracteres"),
-  empresa: z.string().optional().or(z.literal("")),
-  cargo: z.string().optional().or(z.literal("")),
-  observacoes: z.string().optional().or(z.literal("")),
-  categoria: z.enum(["pessoal", "trabalho", "familia", "outro"]),
+  phone: z.string().min(8, "Telefone deve ter pelo menos 8 caracteres"),
+  company: z.string().optional().or(z.literal("")),
+  role: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+  category: z.enum(["personal", "work", "family", "other"]),
 })
 
 interface ContatoFormProps {
@@ -64,13 +64,13 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
   const form = useForm<z.infer<typeof contatoSchema>>({
     resolver: zodResolver(contatoSchema),
     defaultValues: {
-      nome: contato?.nome ?? "",
+      name: contato?.name ?? "",
       email: contato?.email ?? "",
-      telefone: contato?.telefone ?? "",
-      empresa: contato?.empresa ?? "",
-      cargo: contato?.cargo ?? "",
-      observacoes: contato?.observacoes ?? "",
-      categoria: contato?.categoria ?? "outro",
+      phone: contato?.phone ?? "",
+      company: contato?.company ?? "",
+      role: contato?.role ?? "",
+      notes: contato?.notes ?? "",
+      category: contato?.category ?? "other",
     }
   })
 
@@ -93,25 +93,25 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
       if (isEditing && contato?.id) {
         await updateContato({
           id: contato.id,
-          nome: data.nome,
-          telefone: prepareValue(data.telefone),
+          name: data.name,
+          phone: prepareValue(data.phone),
           email: prepareValue(data.email),
-          categoria: data.categoria,
+          category: data.category,
           tags: contato.tags || [],
-          empresa: prepareValue(data.empresa),
-          cargo: prepareValue(data.cargo),
-          observacoes: prepareValue(data.observacoes)
+          company: prepareValue(data.company),
+          role: prepareValue(data.role),
+          notes: prepareValue(data.notes)
         })
       } else {
         await createContato({
-          nome: data.nome,
-          telefone: prepareValue(data.telefone),
+          name: data.name,
+          phone: prepareValue(data.phone),
           email: prepareValue(data.email),
-          categoria: data.categoria,
+          category: data.category,
           tags: selectedTagIds.map(tagId => tags.find(tag => tag.id === tagId)!).filter(Boolean),
-          empresa: prepareValue(data.empresa),
-          cargo: prepareValue(data.cargo),
-          observacoes: prepareValue(data.observacoes)
+          company: prepareValue(data.company),
+          role: prepareValue(data.role),
+          notes: prepareValue(data.notes)
         })
       }
 
@@ -119,13 +119,13 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
       
       if (!isEditing) {
         form.reset({
-          nome: "",
+          name: "",
           email: "",
-          telefone: "",
-          empresa: "",
-          cargo: "",
-          observacoes: "",
-          categoria: "outro",
+          phone: "",
+          company: "",
+          role: "",
+          notes: "",
+          category: "other",
         })
         setSelectedTagIds([])
       }
@@ -143,7 +143,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
-            name="nome"
+            name="name"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
@@ -160,7 +160,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           
           <FormField
             control={form.control}
-            name="telefone"
+            name="phone"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
@@ -194,7 +194,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           
           <FormField
             control={form.control}
-            name="empresa"
+            name="company"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
@@ -211,7 +211,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           
           <FormField
             control={form.control}
-            name="cargo"
+            name="role"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Cargo</FormLabel>
@@ -228,7 +228,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
           
           <FormField
             control={form.control}
-            name="categoria"
+            name="category"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria</FormLabel>
@@ -242,10 +242,10 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="pessoal">Pessoal</SelectItem>
-                    <SelectItem value="trabalho">Trabalho</SelectItem>
-                    <SelectItem value="familia">Família</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
+                    <SelectItem value="personal">Pessoal</SelectItem>
+                    <SelectItem value="work">Trabalho</SelectItem>
+                    <SelectItem value="family">Família</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -256,7 +256,7 @@ export function ContatoForm({ contato, onSuccess, onCancel }: ContatoFormProps) 
         
         <FormField
           control={form.control}
-          name="observacoes"
+          name="notes"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Observações</FormLabel>

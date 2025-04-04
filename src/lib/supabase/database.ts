@@ -4,18 +4,21 @@ import { Tag, Contato } from "@/app/contatos/components/types";
 // Interfaces para o banco de dados
 export interface DBTag {
   id: string;
-  nome: string;
-  cor: string;
+  name: string;
+  color: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface DBContato {
   id: string;
-  nome: string;
+  name: string;
   email: string | null;
-  telefone: string | null;
-  categoria: string;
+  phone: string | null;
+  category: string;
+  company: string | null;
+  role: string | null;
+  notes: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -37,8 +40,8 @@ export async function fetchTags(): Promise<Tag[]> {
   
   return data.map((tag: DBTag) => ({
     id: tag.id,
-    nome: tag.nome,
-    cor: tag.cor
+    name: tag.name,
+    color: tag.color
   }));
 }
 
@@ -46,7 +49,7 @@ export async function createTag(tag: Omit<Tag, "id">): Promise<Tag> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("tags")
-    .insert({ nome: tag.nome, cor: tag.cor })
+    .insert({ name: tag.name, color: tag.color })
     .select()
     .single();
   
@@ -57,8 +60,8 @@ export async function createTag(tag: Omit<Tag, "id">): Promise<Tag> {
   
   return {
     id: data.id,
-    nome: data.nome,
-    cor: data.cor
+    name: data.name,
+    color: data.color
   };
 }
 
@@ -66,7 +69,7 @@ export async function updateTag(tag: Tag): Promise<Tag> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("tags")
-    .update({ nome: tag.nome, cor: tag.cor })
+    .update({ name: tag.name, color: tag.color })
     .eq("id", tag.id)
     .select()
     .single();
@@ -78,8 +81,8 @@ export async function updateTag(tag: Tag): Promise<Tag> {
   
   return {
     id: data.id,
-    nome: data.nome,
-    cor: data.cor
+    name: data.name,
+    color: data.color
   };
 }
 
@@ -143,20 +146,20 @@ export async function fetchContatos(): Promise<Contato[]> {
       .filter((tag: DBTag) => contatoTagIds.includes(tag.id))
       .map((tag: DBTag) => ({
         id: tag.id,
-        nome: tag.nome,
-        cor: tag.cor
+        name: tag.name,
+        color: tag.color
       }));
     
     return {
       id: contato.id,
-      nome: contato.nome,
+      name: contato.name,
       email: contato.email,
-      telefone: contato.telefone,
-      categoria: contato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
+      phone: contato.phone,
+      category: contato.category as "personal" | "work" | "family" | "other",
       tags: contatoTags,
-      empresa: null,
-      cargo: null,
-      observacoes: null
+      company: contato.company,
+      role: contato.role,
+      notes: contato.notes
     };
   });
 }
@@ -198,14 +201,14 @@ export async function getContato(id: string): Promise<Contato | null> {
   if (tagIds.length === 0) {
     return {
       id: contato.id,
-      nome: contato.nome,
+      name: contato.name,
       email: contato.email || "",
-      telefone: contato.telefone || "",
-      categoria: contato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
+      phone: contato.phone || "",
+      category: contato.category as "personal" | "work" | "family" | "other",
       tags: [],
-      empresa: null,
-      cargo: null,
-      observacoes: null
+      company: contato.company,
+      role: contato.role,
+      notes: contato.notes
     };
   }
   
@@ -222,18 +225,18 @@ export async function getContato(id: string): Promise<Contato | null> {
   
   return {
     id: contato.id,
-    nome: contato.nome,
+    name: contato.name,
     email: contato.email || "",
-    telefone: contato.telefone || "",
-    categoria: contato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
+    phone: contato.phone || "",
+    category: contato.category as "personal" | "work" | "family" | "other",
     tags: tags.map((tag: DBTag) => ({
       id: tag.id,
-      nome: tag.nome,
-      cor: tag.cor
+      name: tag.name,
+      color: tag.color
     })),
-    empresa: null,
-    cargo: null,
-    observacoes: null
+    company: contato.company,
+    role: contato.role,
+    notes: contato.notes
   };
 }
 
@@ -244,10 +247,13 @@ export async function createContato(contato: Omit<Contato, "id">): Promise<Conta
   const { data: newContato, error: contatoError } = await supabase
     .from("contatos")
     .insert({
-      nome: contato.nome,
+      name: contato.name,
       email: contato.email || null,
-      telefone: contato.telefone || null,
-      categoria: contato.categoria
+      phone: contato.phone || null,
+      category: contato.category,
+      company: contato.company,
+      role: contato.role,
+      notes: contato.notes
     })
     .select()
     .single();
@@ -276,14 +282,14 @@ export async function createContato(contato: Omit<Contato, "id">): Promise<Conta
   
   return {
     id: newContato.id,
-    nome: newContato.nome,
+    name: newContato.name,
     email: newContato.email || "",
-    telefone: newContato.telefone || "",
-    categoria: newContato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
+    phone: newContato.phone || "",
+    category: newContato.category as "personal" | "work" | "family" | "other",
     tags: contato.tags || [],
-    empresa: null,
-    cargo: null,
-    observacoes: null
+    company: newContato.company,
+    role: newContato.role,
+    notes: newContato.notes
   };
 }
 
@@ -294,10 +300,13 @@ export async function updateContato(contato: Contato): Promise<Contato> {
   const { data: updatedContato, error: contatoError } = await supabase
     .from("contatos")
     .update({
-      nome: contato.nome,
+      name: contato.name,
       email: contato.email || null,
-      telefone: contato.telefone || null,
-      categoria: contato.categoria
+      phone: contato.phone || null,
+      category: contato.category,
+      company: contato.company,
+      role: contato.role,
+      notes: contato.notes
     })
     .eq("id", contato.id)
     .select()
@@ -338,14 +347,14 @@ export async function updateContato(contato: Contato): Promise<Contato> {
   
   return {
     id: updatedContato.id,
-    nome: updatedContato.nome,
+    name: updatedContato.name,
     email: updatedContato.email || "",
-    telefone: updatedContato.telefone || "",
-    categoria: updatedContato.categoria as "pessoal" | "trabalho" | "familia" | "outro",
+    phone: updatedContato.phone || "",
+    category: updatedContato.category as "personal" | "work" | "family" | "other",
     tags: contato.tags || [],
-    empresa: null,
-    cargo: null,
-    observacoes: null
+    company: updatedContato.company,
+    role: updatedContato.role,
+    notes: updatedContato.notes
   };
 }
 

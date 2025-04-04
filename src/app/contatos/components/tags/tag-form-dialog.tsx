@@ -15,7 +15,7 @@ import { ColorPicker } from "../ui/color-picker"
 import { Tag } from "../types"
 
 interface TagFormDialogProps {
-  onSave: (tag: { nome: string, cor: string }) => void
+  onSave: (tag: { name: string, color: string }) => void
   children?: React.ReactNode
   tag?: Tag | null
   triggerButton?: React.ReactNode
@@ -23,25 +23,25 @@ interface TagFormDialogProps {
 
 export function TagFormDialog({ onSave, children, tag = null, triggerButton }: TagFormDialogProps) {
   const [open, setOpen] = useState(false)
-  const [nome, setNome] = useState("")
-  const [cor, setCor] = useState("#3b82f6")
+  const [name, setName] = useState("")
+  const [color, setColor] = useState("#3b82f6")
   
   // Preencher os campos se estiver editando uma tag existente
   useEffect(() => {
     if (tag) {
-      setNome(tag.nome)
-      setCor(tag.cor)
+      setName(tag.name)
+      setColor(tag.color)
     }
   }, [tag])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({ nome, cor })
+    onSave({ name, color })
     setOpen(false)
     // Resetar os campos apenas se não estiver editando
     if (!tag) {
-      setNome("")
-      setCor("#3b82f6")
+      setName("")
+      setColor("#3b82f6")
     }
   }
 
@@ -65,18 +65,18 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton }: T
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome da Tag</Label>
+            <Label htmlFor="name">Nome da Tag</Label>
             <Input
-              id="nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           
           <div className="space-y-2">
             <Label>Cor</Label>
-            <ColorPicker value={cor} onChange={setCor} />
+            <ColorPicker value={color} onChange={setColor} />
           </div>
           
           <div className="flex justify-end gap-2">

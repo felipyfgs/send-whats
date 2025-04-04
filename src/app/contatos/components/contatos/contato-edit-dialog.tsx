@@ -1,6 +1,6 @@
 "use client"
 
-import { Contato } from "./columns"
+import { Contato } from "../types"
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ export function ContatoEditDialog({
         <DialogHeader>
           <DialogTitle>Editar contato</DialogTitle>
           <DialogDescription>
-            Atualize as informações do contato "{contato.nome}".
+            Atualize as informações do contato "{contato.name}".
           </DialogDescription>
         </DialogHeader>
         <ContatoForm 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useContatos } from "@/contexts/contatos-context"
-import { Contato } from "./columns"
+import { Contato, Tag } from "../types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
@@ -17,16 +17,26 @@ import {
   Phone, 
   Building, 
   Briefcase, 
-  Calendar, 
-  Tag, 
+  Tag as LucideTag,
   Edit,
   Trash2,
   User
 } from "lucide-react"
 import { ContatoCategoriaIcon } from "./contato-utils"
-import { cn } from "@/lib/utils"
 import { ContatoEditDialog } from "./contato-edit-dialog"
 import { toast } from "sonner"
+
+// Função para mapear categorias em inglês para português
+const mapCategoryToPt = (category: "personal" | "work" | "family" | "other"): "pessoal" | "trabalho" | "familia" | "outro" => {
+  const mapping = {
+    personal: "pessoal",
+    work: "trabalho",
+    family: "familia",
+    other: "outro"
+  } as const
+  
+  return mapping[category]
+}
 
 interface ContatoDetailDialogProps {
   contatoId: string | null
@@ -107,25 +117,30 @@ export function ContatoDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-              <p className="mt-2 text-sm text-muted-foreground">Carregando detalhes...</p>
-            </div>
+            <>
+              <DialogHeader>
+                <DialogTitle>Detalhes do Contato</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Carregando detalhes...</p>
+              </div>
+            </>
           ) : contato ? (
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl">
                   <User className="h-5 w-5" />
-                  {contato.nome}
+                  {contato.name}
                 </DialogTitle>
               </DialogHeader>
               
               <div className="mt-4 space-y-4">
                 <div className="flex items-center text-sm">
                   <div className="mr-2 rounded-full bg-primary/10 p-2">
-                    <ContatoCategoriaIcon categoria={contato.categoria} className="h-4 w-4 text-primary" />
+                    <ContatoCategoriaIcon categoria={mapCategoryToPt(contato.category)} className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="capitalize">{contato.categoria}</span>
+                  <span className="capitalize">{contato.category}</span>
                 </div>
                 
                 {contato.email && (
@@ -139,59 +154,59 @@ export function ContatoDetailDialog({
                   </div>
                 )}
                 
-                {contato.telefone && (
+                {contato.phone && (
                   <div className="flex items-center text-sm">
                     <div className="mr-2 rounded-full bg-primary/10 p-2">
                       <Phone className="h-4 w-4 text-primary" />
                     </div>
-                    <a href={`tel:${contato.telefone}`} className="text-primary underline-offset-4 hover:underline">
-                      {contato.telefone}
+                    <a href={`tel:${contato.phone}`} className="text-primary underline-offset-4 hover:underline">
+                      {contato.phone}
                     </a>
                   </div>
                 )}
                 
-                {contato.empresa && (
+                {contato.company && (
                   <div className="flex items-center text-sm">
                     <div className="mr-2 rounded-full bg-primary/10 p-2">
                       <Building className="h-4 w-4 text-primary" />
                     </div>
-                    <span>{contato.empresa}</span>
+                    <span>{contato.company}</span>
                   </div>
                 )}
                 
-                {contato.cargo && (
+                {contato.role && (
                   <div className="flex items-center text-sm">
                     <div className="mr-2 rounded-full bg-primary/10 p-2">
                       <Briefcase className="h-4 w-4 text-primary" />
                     </div>
-                    <span>{contato.cargo}</span>
+                    <span>{contato.role}</span>
                   </div>
                 )}
                 
                 {contato.tags && contato.tags.length > 0 && (
                   <div className="flex items-start text-sm">
                     <div className="mr-2 mt-1 rounded-full bg-primary/10 p-2">
-                      <Tag className="h-4 w-4 text-primary" />
+                      <LucideTag className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {contato.tags.map((tag) => (
                         <Badge 
                           key={tag.id} 
-                          style={{ backgroundColor: tag.cor }}
+                          style={{ backgroundColor: tag.color }}
                           className="text-white"
                         >
-                          {tag.nome}
+                          {tag.name}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
                 
-                {contato.observacoes && (
+                {contato.notes && (
                   <div className="mt-4 rounded-md bg-muted p-3 text-sm">
                     <h4 className="mb-1 font-medium">Observações:</h4>
                     <p className="whitespace-pre-line text-muted-foreground">
-                      {contato.observacoes}
+                      {contato.notes}
                     </p>
                   </div>
                 )}
@@ -219,9 +234,14 @@ export function ContatoDetailDialog({
               </DialogFooter>
             </>
           ) : (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">Contato não encontrado.</p>
-            </div>
+            <>
+              <DialogHeader>
+                <DialogTitle>Detalhes do Contato</DialogTitle>
+              </DialogHeader>
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground">Contato não encontrado.</p>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

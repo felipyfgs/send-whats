@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { ContatoCreateDialog } from "./contato-create-dialog"
-import { TagManagerDialog } from "./tag-manager-dialog"
+import { TagManagerDialog } from "../tags/tag-manager-dialog"
 
 export function ContatosActions() {
   const { 
