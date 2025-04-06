@@ -22,21 +22,11 @@ import {
   Trash2,
   User
 } from "lucide-react"
-import { ContatoCategoriaIcon } from "./contato-utils"
-import { ContatoEditDialog } from "./contato-edit-dialog"
+import { mapCategoryToPt } from "../../utils/contato-helpers"
+import { ContatoCategoriaIcon } from "../ContatoCategoriaIcon"
+import { ContatoTagsButton } from "./contato-tags-button"
 import { toast } from "sonner"
-
-// Função para mapear categorias em inglês para português
-const mapCategoryToPt = (category: "personal" | "work" | "family" | "other"): "pessoal" | "trabalho" | "familia" | "outro" => {
-  const mapping = {
-    personal: "pessoal",
-    work: "trabalho",
-    family: "familia",
-    other: "outro"
-  } as const
-  
-  return mapping[category]
-}
+import { ContatoDialog } from "./contato-dialog"
 
 interface ContatoDetailDialogProps {
   contatoId: string | null
@@ -68,7 +58,6 @@ export function ContatoDetailDialog({
         const data = await getContato(contatoId)
         setContato(data)
       } catch (error) {
-        console.error("Erro ao carregar contato:", error)
         toast.error("Não foi possível carregar os detalhes do contato")
       } finally {
         setLoading(false)
@@ -90,7 +79,6 @@ export function ContatoDetailDialog({
       toast.success("Contato excluído com sucesso")
       onOpenChange(false)
     } catch (error) {
-      console.error("Erro ao excluir contato:", error)
       toast.error("Não foi possível excluir o contato")
     } finally {
       setIsDeleting(false)
@@ -112,6 +100,12 @@ export function ContatoDetailDialog({
     }
   }
 
+  const handleManageTags = () => {
+    if (contato && window.openTagsDialog) {
+      window.openTagsDialog([contato.id])
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,21 +122,41 @@ export function ContatoDetailDialog({
             </>
           ) : contato ? (
             <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <User className="h-5 w-5" />
-                  {contato.name}
-                </DialogTitle>
+              <DialogHeader className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <DialogTitle className="text-xl font-semibold">
+                    {contato.name}
+                  </DialogTitle>
+                  <Badge 
+                    variant="outline" 
+                    className="capitalize font-normal"
+                  >
+                    {mapCategoryToPt(contato.category)}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleEdit}
+                    className="h-8"
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1" />
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleManageTags}
+                    className="h-8"
+                  >
+                    <LucideTag className="h-3.5 w-3.5 mr-1" />
+                    Tags
+                  </Button>
+                </div>
               </DialogHeader>
               
-              <div className="mt-4 space-y-4">
-                <div className="flex items-center text-sm">
-                  <div className="mr-2 rounded-full bg-primary/10 p-2">
-                    <ContatoCategoriaIcon categoria={mapCategoryToPt(contato.category)} className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="capitalize">{contato.category}</span>
-                </div>
-                
+              <div className="mt-4 space-y-4 bg-muted/40 p-4 rounded-lg">
                 {contato.email && (
                   <div className="flex items-center text-sm">
                     <div className="mr-2 rounded-full bg-primary/10 p-2">
@@ -182,14 +196,18 @@ export function ContatoDetailDialog({
                     <span>{contato.role}</span>
                   </div>
                 )}
-                
-                {contato.tags && contato.tags.length > 0 && (
-                  <div className="flex items-start text-sm">
-                    <div className="mr-2 mt-1 rounded-full bg-primary/10 p-2">
-                      <LucideTag className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {contato.tags.map((tag) => (
+              </div>
+              
+              {/* Tags */}
+              {contato.tags && (
+                <div className="mt-4">
+                  <div className="flex items-center mb-2">
+                    <LucideTag className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <h3 className="text-sm font-medium">Tags</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {contato.tags.length > 0 ? (
+                      contato.tags.map((tag) => (
                         <Badge 
                           key={tag.id} 
                           style={{ backgroundColor: tag.color }}
@@ -197,58 +215,57 @@ export function ContatoDetailDialog({
                         >
                           {tag.name}
                         </Badge>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Nenhuma tag atribuída</span>
+                    )}
                   </div>
-                )}
-                
-                {contato.notes && (
-                  <div className="mt-4 rounded-md bg-muted p-3 text-sm">
-                    <h4 className="mb-1 font-medium">Observações:</h4>
-                    <p className="whitespace-pre-line text-muted-foreground">
-                      {contato.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
               
-              <DialogFooter className="mt-6 flex justify-between sm:justify-between">
+              {/* Notas */}
+              {contato.notes && (
+                <div className="mt-4">
+                  <div className="flex items-center mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2 text-muted-foreground">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <h3 className="text-sm font-medium">Notas</h3>
+                  </div>
+                  <p className="text-sm bg-muted/40 p-3 rounded-md whitespace-pre-wrap">
+                    {contato.notes}
+                  </p>
+                </div>
+              )}
+              
+              <DialogFooter className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Fechar
+                </Button>
                 <Button 
-                  variant="destructive" 
-                  size="sm"
+                  variant="destructive"
                   onClick={handleDelete}
                   disabled={isDeleting}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {isDeleting ? "Excluindo..." : "Excluir"}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleEdit}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
+                  {isDeleting ? "Excluindo..." : "Excluir contato"}
                 </Button>
               </DialogFooter>
             </>
           ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Detalhes do Contato</DialogTitle>
-              </DialogHeader>
-              <div className="py-8 text-center">
-                <p className="text-muted-foreground">Contato não encontrado.</p>
-              </div>
-            </>
+            <div className="p-4 text-center">
+              <p>Contato não encontrado</p>
+            </div>
           )}
         </DialogContent>
       </Dialog>
-      
-      {/* Diálogo de edição */}
+
+      {/* Modal de edição */}
       {contato && (
-        <ContatoEditDialog 
+        <ContatoDialog
+          mode="edit"
           contato={contato}
           open={showEditDialog}
           onOpenChange={setShowEditDialog}

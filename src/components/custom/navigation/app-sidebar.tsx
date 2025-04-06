@@ -10,9 +10,9 @@ import {
   BookMarked,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from "./nav-main"
+import { NavUser } from "./nav-user"
+import { TeamSwitcher } from "../team/team-switcher"
 import {
   Sidebar,
   SidebarContent,

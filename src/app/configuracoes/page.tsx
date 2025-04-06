@@ -1,7 +1,8 @@
 "use client"
 
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/custom/navigation/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,7 +23,10 @@ import { LimitesSettings } from "./components/limites-settings"
 import { SegurancaSettings } from "./components/seguranca-settings"
 import { ApiSettings } from "./components/api-settings"
 
-export default function ConfiguracoesPage() {
+// Componente que usa useSearchParams dentro de Suspense
+function ConfiguracoesTabProvider() {
+  "use client"
+  
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab")
   
@@ -31,6 +35,32 @@ export default function ConfiguracoesPage() {
     ? tabParam 
     : "geral"
 
+  return (
+    <Tabs defaultValue={defaultTab} className="space-y-6">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="geral">Geral</TabsTrigger>
+        <TabsTrigger value="limites">Limites e Uso</TabsTrigger>
+        <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+        <TabsTrigger value="api">API WhatsApp</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="geral" className="space-y-4">
+        <ConfiguracoesGeral />
+      </TabsContent>
+      <TabsContent value="limites" className="space-y-4">
+        <LimitesSettings />
+      </TabsContent>
+      <TabsContent value="seguranca" className="space-y-4">
+        <SegurancaSettings />
+      </TabsContent>
+      <TabsContent value="api" className="space-y-4">
+        <ApiSettings />
+      </TabsContent>
+    </Tabs>
+  )
+}
+
+export default function ConfiguracoesPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -63,27 +93,9 @@ export default function ConfiguracoesPage() {
             </p>
           </div>
           
-          <Tabs defaultValue={defaultTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="geral">Geral</TabsTrigger>
-              <TabsTrigger value="limites">Limites e Uso</TabsTrigger>
-              <TabsTrigger value="seguranca">Segurança</TabsTrigger>
-              <TabsTrigger value="api">API WhatsApp</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="geral" className="space-y-4">
-              <ConfiguracoesGeral />
-            </TabsContent>
-            <TabsContent value="limites" className="space-y-4">
-              <LimitesSettings />
-            </TabsContent>
-            <TabsContent value="seguranca" className="space-y-4">
-              <SegurancaSettings />
-            </TabsContent>
-            <TabsContent value="api" className="space-y-4">
-              <ApiSettings />
-            </TabsContent>
-          </Tabs>
+          <Suspense fallback={<div>Carregando configurações...</div>}>
+            <ConfiguracoesTabProvider />
+          </Suspense>
         </div>
       </SidebarInset>
     </SidebarProvider>

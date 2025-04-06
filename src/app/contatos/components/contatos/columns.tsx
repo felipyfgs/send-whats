@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Phone, Mail, User, Eye } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Phone, Mail, User, Eye, TagIcon, Trash2, Check, X, CheckCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -18,6 +18,7 @@ import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { ContatoDetailDialog } from "./contato-detail-dialog"
 import { Contato, Tag } from "../types"
+import { categoryLabels } from "../../utils/contato-helpers"
 
 // Componente para as células com ações do contato
 function ActionsCell({ contato }: { contato: Contato }) {
@@ -30,7 +31,6 @@ function ActionsCell({ contato }: { contato: Contato }) {
       toast.success(`O contato ${contato.name} foi excluído com sucesso`)
     } catch (error) {
       toast.error("Não foi possível excluir o contato")
-      console.error("Erro ao excluir contato:", error)
     }
   }, [contato.id, contato.name, deleteContato])
 
@@ -41,9 +41,11 @@ function ActionsCell({ contato }: { contato: Contato }) {
   const handleManageTags = useCallback(() => {
     // Seleciona apenas este contato para gerenciar tags
     setSelectedContatos([contato.id])
-    // Implementação futura da gestão de tags individual
-    toast(`Use os botões de ação acima para gerenciar as tags de ${contato.name}`)
-  }, [contato.id, contato.name, setSelectedContatos])
+    // Abre o diálogo de tags
+    if (window.openTagsDialog) {
+      window.openTagsDialog([contato.id])
+    }
+  }, [contato.id, setSelectedContatos])
 
   const copyToClipboard = useCallback((text: string | null | undefined, message: string) => {
     if (text === null || text === undefined || text === "") {
@@ -63,44 +65,22 @@ function ActionsCell({ contato }: { contato: Contato }) {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={() => copyToClipboard(
-              contato.id, 
-              "ID do contato copiado para a área de transferência"
-            )}
-          >
-            Copiar ID
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleViewDetails}>
+        <DropdownMenuContent align="end" className="w-[180px]">
+          <DropdownMenuItem onClick={handleViewDetails} className="cursor-pointer">
             <Eye className="mr-2 h-4 w-4" />
             Ver detalhes
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copyToClipboard(
-              contato.email,
-              "Email copiado para a área de transferência"
-            )}
-          >
-            Copiar email
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copyToClipboard(
-              contato.phone,
-              "Telefone copiado para a área de transferência"
-            )}
-          >
-            Copiar telefone
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleManageTags}>
+          <DropdownMenuItem onClick={handleManageTags} className="cursor-pointer">
+            <TagIcon className="mr-2 h-4 w-4" />
             Gerenciar tags
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={handleDelete}
-            className="text-destructive"
+            className="text-destructive cursor-pointer"
           >
-            Excluir contato
+            <Trash2 className="mr-2 h-4 w-4" />
+            Excluir
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -140,16 +120,34 @@ function TagsCell({ tags }: { tags: Tag[] }) {
 export const columns: ColumnDef<Contato>[] = [
   {
     id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todos"
-      />
-    ),
+    header: ({ table }) => {
+      const totalRows = table.getFilteredRowModel().rows.length;
+      const selectedRowsCount = table.getFilteredSelectedRowModel().rows.length;
+      const isAllSelected = table.getIsAllRowsSelected();
+      const isPartiallySelected = selectedRowsCount > 0 && !isAllSelected;
+      const isAllPageRowsSelected = table.getIsAllPageRowsSelected();
+      
+      return (
+        <Checkbox
+          checked={isAllSelected ? true : (isPartiallySelected || isAllPageRowsSelected) ? "indeterminate" : false}
+          onCheckedChange={(value) => {
+            // Alternar entre selecionar todas as linhas e limpar a seleção
+            if (isAllSelected) {
+              // Se já estiver tudo selecionado, limpa a seleção
+              table.toggleAllRowsSelected(false);
+            } else if (selectedRowsCount > 0) {
+              // Se tiver alguma linha selecionada, seleciona todas
+              table.toggleAllRowsSelected(true);
+            } else {
+              // Do contrário, seleciona todas as linhas da página atual
+              table.toggleAllPageRowsSelected(!!value);
+            }
+          }}
+          aria-label="Selecionar todos"
+          className="cursor-pointer"
+        />
+      );
+    },
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -159,6 +157,7 @@ export const columns: ColumnDef<Contato>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+    enableGlobalFilter: false,
   },
   {
     accessorKey: "name",
@@ -177,6 +176,7 @@ export const columns: ColumnDef<Contato>[] = [
         <span>{row.getValue("name")}</span>
       </div>
     ),
+    enableGlobalFilter: true,
   },
   {
     accessorKey: "email",
@@ -195,6 +195,7 @@ export const columns: ColumnDef<Contato>[] = [
         <span>{row.getValue("email")}</span>
       </div>
     ),
+    enableGlobalFilter: true,
   },
   {
     accessorKey: "phone",
@@ -205,6 +206,7 @@ export const columns: ColumnDef<Contato>[] = [
         <span>{row.getValue("phone")}</span>
       </div>
     ),
+    enableGlobalFilter: true,
   },
   {
     accessorKey: "category",
@@ -212,6 +214,7 @@ export const columns: ColumnDef<Contato>[] = [
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("category")}</div>
     ),
+    enableGlobalFilter: true,
   },
   {
     accessorKey: "tags",
@@ -220,10 +223,21 @@ export const columns: ColumnDef<Contato>[] = [
       const tags = row.original.tags || []
       return <TagsCell tags={tags} />
     },
+    enableGlobalFilter: true,
+    filterFn: (row, columnId, filterValue) => {
+      const tags = row.getValue(columnId) as Tag[];
+      if (!tags || !Array.isArray(tags) || tags.length === 0) return false;
+      
+      // Verifica se alguma tag contém o termo de pesquisa
+      return tags.some(tag => 
+        tag.name.toLowerCase().includes(String(filterValue).toLowerCase())
+      );
+    },
   },
   {
     id: "actions",
     enableHiding: false,
+    enableGlobalFilter: false,
     cell: ({ row }) => <ActionsCell contato={row.original} />,
   },
 ] 

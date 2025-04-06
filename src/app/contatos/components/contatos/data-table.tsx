@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -31,24 +31,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useContatos } from "@/contexts/contatos-context"
+import { useContatos } from "@/app/contatos/components/contatos-context"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  searchField?: string
-  searchPlaceholder?: string
-  emptyMessage?: string
+  onRowSelectionChange?: (selectedRows: TData[]) => void
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchField = "name",
-  searchPlaceholder = "Filtrar por nome...",
-  emptyMessage = "Nenhum resultado encontrado."
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
-  const { selectedContatos, setSelectedContatos } = useContatos()
+  const { selectedContatos, setSelectedContatos, searchContatos, searchQuery } = useContatos()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -77,7 +73,7 @@ export function DataTable<TData, TValue>({
     
     // Mapeia seleções apenas se houver contatos selecionados
     if (selectedContatos.length > 0) {
-      selectedContatos.forEach(id => {
+      selectedContatos.forEach((id: string) => {
         const index = idToIndexMap.get(id)
         if (index !== undefined) {
           newSelection[index] = true
@@ -99,7 +95,7 @@ export function DataTable<TData, TValue>({
         isUpdatingRef.current = false
       }, 0)
     }
-  }, [selectedContatos, data])
+  }, [selectedContatos, data, rowSelection])
   
   // Configuração da tabela com manipulador otimizado de seleção
   const table = useReactTable({
@@ -147,24 +143,60 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  // Atualizar a seleção de linhas quando necessário
+  React.useEffect(() => {
+    if (onRowSelectionChange) {
+      const selectedRows = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original)
+      onRowSelectionChange(selectedRows)
+    }
+  }, [table, rowSelection, onRowSelectionChange])
+
+  // Função para lidar com a mudança na busca global
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    // Usar a função de busca global do contexto
+    searchContatos(value)
+  }
+
+  // Tradução de nomes de colunas para o português para o dropdown
+  const getColumnPortugueseName = (columnId: string) => {
+    const columnNames: Record<string, string> = {
+      name: "Nome",
+      email: "Email",
+      phone: "Telefone",
+      category: "Categoria",
+      company: "Empresa",
+      role: "Cargo",
+      notes: "Notas",
+      tags: "Tags",
+      select: "Selecionar",
+      actions: "Ações"
+    }
+    
+    return columnNames[columnId] || columnId
+  }
+
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder={searchPlaceholder}
-          value={(table.getColumn(searchField)?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn(searchField)?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+      <div className="flex items-center py-2 px-2">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar em todos os campos..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="max-w-sm h-8 text-sm pl-9"
+          />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            <Button variant="outline" size="sm" className="ml-auto h-8 px-2 text-xs">
+              Colunas <ChevronDown className="ml-1 h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="text-xs">
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
@@ -172,13 +204,13 @@ export function DataTable<TData, TValue>({
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
+                    className="capitalize text-xs"
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) =>
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {getColumnPortugueseName(column.id)}
                   </DropdownMenuCheckboxItem>
                 )
               })}
@@ -186,13 +218,13 @@ export function DataTable<TData, TValue>({
         </DropdownMenu>
       </div>
       <div className="rounded-md border">
-        <Table>
+        <Table className="text-sm">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-muted/50">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="h-8 px-2 py-1">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -211,9 +243,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="h-9"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="px-2 py-1">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -226,24 +259,25 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-20 text-center"
                 >
-                  {emptyMessage}
+                  Nenhum resultado encontrado.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex items-center justify-end space-x-2 py-2 px-2">
+        <div className="flex-1 text-xs text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} de{" "}
           {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
         </div>
-        <div className="space-x-2">
+        <div className="space-x-1">
           <Button
             variant="outline"
             size="sm"
+            className="h-7 px-2 text-xs"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -252,6 +286,7 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="sm"
+            className="h-7 px-2 text-xs"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >

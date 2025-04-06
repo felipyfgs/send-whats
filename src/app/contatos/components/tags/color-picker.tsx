@@ -17,4 +17,4 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
       <span className="text-sm text-muted-foreground">{value}</span>
     </div>
   )
-}
+} 

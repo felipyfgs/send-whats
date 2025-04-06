@@ -62,7 +62,6 @@ export function PerfilTab() {
 
   function onSubmit(data: PerfilFormValues) {
     // Implementar a lógica de salvamento
-    console.log(data)
   }
 
   return (

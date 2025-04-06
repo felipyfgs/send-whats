@@ -51,7 +51,6 @@ export function SegurancaTab() {
 
   function onSubmit(data: SenhaFormValues) {
     // Implementar a lógica de alteração de senha
-    console.log(data)
   }
 
   return (
