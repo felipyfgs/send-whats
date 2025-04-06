@@ -2,6 +2,13 @@ import { createClient } from "@/lib/supabase/client";
 
 export type StatusCampanha = 'rascunho' | 'agendada' | 'ativa' | 'pausada' | 'concluida' | 'cancelada';
 
+export interface MediaAttachment {
+  type: 'image' | 'audio' | 'video' | 'file';
+  name: string;
+  size: string;
+  url?: string;
+}
+
 export interface Campanha {
   id: string;
   team_id: string | null; 
@@ -14,6 +21,7 @@ export interface Campanha {
   status: StatusCampanha;
   created_at: string;
   updated_at: string;
+  media_attachments?: MediaAttachment[];
   grupos?: GrupoCampanha[];
 }
 
@@ -25,6 +33,7 @@ export interface CampanhaInsert {
   data_inicio?: string | null;
   data_agendamento?: string | null;
   status?: StatusCampanha;
+  media_attachments?: MediaAttachment[];
 }
 
 export interface CampanhaUpdate {
@@ -35,6 +44,7 @@ export interface CampanhaUpdate {
   data_agendamento?: string | null;
   data_conclusao?: string | null;
   status?: StatusCampanha;
+  media_attachments?: MediaAttachment[];
 }
 
 export interface GrupoCampanha {

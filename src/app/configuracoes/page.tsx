@@ -74,10 +74,10 @@ export default function ConfiguracoesPage() {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">Início</BreadcrumbLink>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/configuracoes">Início</BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>Configurações</BreadcrumbPage>
                 </BreadcrumbItem>

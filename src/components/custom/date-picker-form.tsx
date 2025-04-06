@@ -13,7 +13,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { FormControl } from "@/components/ui/form"
 
 interface DatePickerFormProps {
   date: Date | undefined
@@ -31,24 +30,22 @@ export function DatePickerForm({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <FormControl>
-          <Button
-            variant={"outline"}
-            disabled={disabled}
-            className={cn(
-              "w-full pl-3 text-left font-normal",
-              !date && "text-muted-foreground",
-              className
-            )}
-          >
-            {date ? (
-              format(date, "PPP", { locale: ptBR })
-            ) : (
-              <span>Selecione uma data</span>
-            )}
-            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-          </Button>
-        </FormControl>
+        <Button
+          variant={"outline"}
+          disabled={disabled}
+          className={cn(
+            "w-full pl-3 text-left font-normal",
+            !date && "text-muted-foreground",
+            className
+          )}
+        >
+          {date ? (
+            format(date, "PPP", { locale: ptBR })
+          ) : (
+            <span>Selecione uma data</span>
+          )}
+          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
@@ -121,24 +118,22 @@ export function DateTimePickerForm({
       <div className="flex-1">
         <Popover>
           <PopoverTrigger asChild>
-            <FormControl>
-              <Button
-                variant={"outline"}
-                disabled={disabled}
-                className={cn(
-                  "w-full pl-3 text-left font-normal",
-                  !date && "text-muted-foreground",
-                  className
-                )}
-              >
-                {date ? (
-                  format(date, "PPP", { locale: ptBR })
-                ) : (
-                  <span>Selecione uma data</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </FormControl>
+            <Button
+              variant={"outline"}
+              disabled={disabled}
+              className={cn(
+                "w-full pl-3 text-left font-normal",
+                !date && "text-muted-foreground",
+                className
+              )}
+            >
+              {date ? (
+                format(date, "PPP", { locale: ptBR })
+              ) : (
+                <span>Selecione uma data</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -153,18 +148,16 @@ export function DateTimePickerForm({
         </Popover>
       </div>
       <div className="w-24">
-        <FormControl>
-          <input
-            type="time"
-            value={selectedTime}
-            onChange={handleTimeChange}
-            disabled={disabled || !date}
-            className={cn(
-              "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-              className
-            )}
-          />
-        </FormControl>
+        <input
+          type="time"
+          value={selectedTime}
+          onChange={handleTimeChange}
+          disabled={disabled || !date}
+          className={cn(
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            className
+          )}
+        />
       </div>
     </div>
   )

@@ -32,6 +32,12 @@ export interface Campanha {
   updatedAt: string;
   content?: string; // corresponde a conteudo no DB
   teamId?: string | null; // corresponde a team_id no DB
+  mediaAttachments?: Array<{
+    type: 'image' | 'audio' | 'video' | 'file';
+    name: string;
+    size: string;
+    url?: string;
+  }>;
 }
 
 interface CampanhasContextType {
@@ -77,7 +83,8 @@ const mapDbCampanhaToAppCampanha = (dbCampanha: DBCampanha): Campanha => {
       createdAt: dbCampanha.created_at,
       updatedAt: dbCampanha.updated_at,
       content: dbCampanha.conteudo,
-      teamId: dbCampanha.team_id
+      teamId: dbCampanha.team_id,
+      mediaAttachments: dbCampanha.media_attachments || []
     };
     
     console.log("Campanha mapeada:", campanha);
@@ -98,22 +105,23 @@ const mapDbCampanhaToAppCampanha = (dbCampanha: DBCampanha): Campanha => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       content: "",
-      teamId: null
+      teamId: null,
+      mediaAttachments: []
     };
   }
 };
 
-// Função para converter formato do app para formato de DB
-const mapAppCampanhaToDbInsert = (appCampanha: Omit<Campanha, "id" | "createdAt" | "updatedAt">, userId?: string): CampanhaInsert => {
-  // Não exigimos mais um teamId
+// Converter campanha do formato do app para formato do DB
+const mapCampanhaToDb = (campanha: Partial<Campanha>): CampanhaInsert => {
   return {
-    team_id: appCampanha.teamId || null, // Agora é opcional
-    nome: appCampanha.title,
-    descricao: appCampanha.description,
-    conteudo: appCampanha.content || "",
-    data_inicio: appCampanha.startDate,
-    data_agendamento: appCampanha.endDate,
-    status: appCampanha.status as StatusCampanha
+    nome: campanha.title || "",
+    descricao: campanha.description || null,
+    conteudo: campanha.content || "",
+    data_inicio: campanha.startDate || null,
+    data_agendamento: null, // definido em casos específicos
+    status: campanha.status as StatusCampanha || "rascunho",
+    team_id: campanha.teamId || null,
+    media_attachments: campanha.mediaAttachments || []
   };
 };
 
@@ -126,6 +134,7 @@ const mapAppCampanhaToDbUpdate = (appCampanha: Partial<Campanha>): CampanhaUpdat
   if (appCampanha.startDate !== undefined) update.data_inicio = appCampanha.startDate;
   if (appCampanha.endDate !== undefined) update.data_agendamento = appCampanha.endDate;
   if (appCampanha.status !== undefined) update.status = appCampanha.status;
+  if (appCampanha.mediaAttachments !== undefined) update.media_attachments = appCampanha.mediaAttachments;
   
   return update;
 };
@@ -235,36 +244,37 @@ export function CampanhasProvider({ children, user }: CampanhasProviderProps) {
         throw new Error("O conteúdo da campanha é obrigatório");
       }
       
-      // Não precisamos mais verificar teamId
-      const dbCampanha = mapAppCampanhaToDbInsert(campanha, user?.id);
+      // Criar objeto de campanha no formato do DB
+      const dbCampanha = mapCampanhaToDb(campanha);
       
-      // Grupos IDs baseados em tags e contatos
+      // Determinar os IDs de grupos conforme o target
       let gruposIds: string[] = [];
-      
-      if (campanha.target === 'all') {
-        // Todos os grupos
-        gruposIds = grupos.map(g => g.id);
-      } else if (campanha.target === 'tags' && campanha.tagIds.length > 0) {
-        // Lógica para mapear tags para grupos
-        // Por enquanto, usamos todos os grupos disponíveis
-        gruposIds = grupos.map(g => g.id);
-      } else if (campanha.target === 'contacts' && campanha.contactIds.length > 0) {
-        // Lógica para mapear contatos para grupos
-        // Por enquanto, usamos todos os grupos disponíveis
-        gruposIds = grupos.map(g => g.id);
+      if (campanha.target === 'tags') {
+        gruposIds = campanha.tagIds || [];
+      } else if (campanha.target === 'contacts') {
+        gruposIds = campanha.contactIds || [];
       }
       
-      // Criar campanha no Supabase
-      const novaCampanha = await createCampanha(dbCampanha, gruposIds);
+      // Aqui seria feito o upload de arquivos de mídia para um serviço de armazenamento
+      // e então obter as URLs permanentes para salvar no banco de dados
+      if (campanha.mediaAttachments && campanha.mediaAttachments.length > 0) {
+        // Simulação de upload - em um caso real, isso seria uma requisição para um serviço
+        // como Supabase Storage, AWS S3, etc.
+        console.log("Simulando upload de anexos:", campanha.mediaAttachments.length, "arquivos");
+        // dbCampanha.media_attachments seria atualizado com as URLs permanentes
+      }
       
-      // Converter de volta para o formato do app
-      const campanhaFormatada = mapDbCampanhaToAppCampanha(novaCampanha);
+      // Chamar API para criar campanha
+      const result = await createCampanha(dbCampanha, gruposIds);
+      
+      // Mapear resultado de volta para formato da aplicação
+      const newCampanha = mapDbCampanhaToAppCampanha(result);
       
       // Atualizar estado
-      setCampanhas(prev => [campanhaFormatada, ...prev]);
+      setCampanhas(prev => [newCampanha, ...prev]);
       toast.success("Campanha criada com sucesso!");
       
-      return campanhaFormatada;
+      return newCampanha;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao criar campanha";
       console.error("Erro ao adicionar campanha:", errorMessage, err);
@@ -275,31 +285,53 @@ export function CampanhasProvider({ children, user }: CampanhasProviderProps) {
     }
   };
 
-  // Atualizar campanha
+  // Atualizar campanha existente
   const updateCampanha = async (id: string, campanha: Partial<Campanha>): Promise<Campanha> => {
     try {
       setLoading(true);
       
-      // Converter para o formato do DB
+      // Verificar se a campanha existe
+      const existingCampanhaIndex = campanhas.findIndex(c => c.id === id);
+      if (existingCampanhaIndex === -1) {
+        throw new Error(`Campanha com ID ${id} não encontrada`);
+      }
+      
+      // Converter para formato do DB
       const dbCampanha = mapAppCampanhaToDbUpdate(campanha);
       
+      // Determinar IDs de grupos se necessário
+      let gruposIds: string[] | undefined = undefined;
+      if (campanha.target !== undefined) {
+        gruposIds = [];
+        if (campanha.target === 'tags' && campanha.tagIds) {
+          gruposIds = campanha.tagIds;
+        } else if (campanha.target === 'contacts' && campanha.contactIds) {
+          gruposIds = campanha.contactIds;
+        }
+      }
+      
+      // Processar anexos de mídia se necessário
+      if (campanha.mediaAttachments && campanha.mediaAttachments.length > 0) {
+        // Em um caso real, aqui seria feito o upload dos novos arquivos
+        // e atualização das URLs no objeto dbCampanha.media_attachments
+        console.log("Simulando upload de anexos atualizados:", campanha.mediaAttachments.length, "arquivos");
+      }
+      
       // Atualizar no Supabase
-      const campanhaAtualizada = await updateCampanhaApi(id, dbCampanha);
+      const updatedCampanha = await updateCampanhaApi(id, dbCampanha, gruposIds);
       
-      // Converter de volta para o formato do app
-      const campanhaFormatada = mapDbCampanhaToAppCampanha(campanhaAtualizada);
+      // Converter para formato do app
+      const mappedCampanha = mapDbCampanhaToAppCampanha(updatedCampanha);
       
-      // Atualizar estado
-      setCampanhas(prev => 
-        prev.map(c => c.id === id ? campanhaFormatada : c)
-      );
+      // Atualizar estado local
+      setCampanhas(prev => prev.map(c => c.id === id ? mappedCampanha : c));
       
-      toast.success("Campanha atualizada com sucesso!");
-      return campanhaFormatada;
+      return mappedCampanha;
     } catch (err) {
-      console.error("Erro ao atualizar campanha:", err);
-      toast.error("Erro ao atualizar campanha");
-      throw err instanceof Error ? err : new Error(String(err));
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao atualizar campanha";
+      console.error("Erro ao atualizar campanha:", errorMessage, err);
+      toast.error(errorMessage);
+      throw err instanceof Error ? err : new Error(errorMessage);
     } finally {
       setLoading(false);
     }

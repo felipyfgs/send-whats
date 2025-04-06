@@ -42,7 +42,7 @@ export default function ContatosPage() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/">Início</BreadcrumbLink>
+                    <BreadcrumbLink href="/contatos">Início</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
