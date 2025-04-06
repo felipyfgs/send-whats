@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import ContatosTable from "./components/contatos/contatos-table"
 import { ContatosProvider } from "@/contexts/contatos-context"
-import { ContatoDialog } from "./components/contatos/contato-dialog"
 import {
   SidebarInset,
   SidebarProvider,

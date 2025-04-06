@@ -3,7 +3,7 @@
 import React from "react";
 import { User, Briefcase, Users, HeartHandshake } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { categoryIcons, ContatoCategoriaPt } from "../utils/contato-helpers";
+import { ContatoCategoriaPt } from "../utils/contato-helpers";
 
 interface ContatoCategoriaIconProps {
   categoria: ContatoCategoriaPt;

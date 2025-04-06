@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Contato } from "../types"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, UserPlus } from "lucide-react"
+import { UserPlus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { ContatoForm } from "./contato-form"
 
 // Interface unificada para criar/editar contato
 interface ContatoDialogProps {
-  mode: "create" | "edit"
+  mode: "create" | "edit" | "view"
   contato?: Contato // Opcional para modo "create"
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -47,10 +47,16 @@ export function ContatoDialog({
   }
   
   // Determina o título e descrição com base no modo
-  const title = mode === "create" ? "Adicionar novo contato" : "Editar contato"
+  const title = mode === "create" 
+    ? "Adicionar novo contato" 
+    : mode === "edit" 
+      ? "Editar contato" 
+      : "Detalhes do contato"
   const description = mode === "create" 
     ? "Preencha os campos abaixo para adicionar um novo contato."
-    : `Atualize as informações do contato "${contato?.name}".`
+    : mode === "edit" 
+      ? `Atualize as informações do contato "${contato?.name}".`
+      : `Visualize as informações do contato "${contato?.name}".`
   
   const dialogContent = (
     <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -60,11 +66,20 @@ export function ContatoDialog({
           {description}
         </DialogDescription>
       </DialogHeader>
-      <ContatoForm 
-        contato={contato} 
-        onSuccess={handleSuccess} 
-        onCancel={() => setOpen(false)} 
-      />
+      {mode === "view" ? (
+        <div>
+          {/* Implementar visualização de contato aqui*/}
+          <p>{contato?.name}</p>
+          <p>{contato?.email}</p>
+          <p>{contato?.phone}</p>
+        </div>
+      ) : (
+        <ContatoForm 
+          contato={contato} 
+          onSuccess={handleSuccess} 
+          onCancel={() => setOpen(false)} 
+        />
+      )}
     </DialogContent>
   )
   

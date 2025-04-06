@@ -32,9 +32,7 @@ import {
 } from "@/components/ui/table"
 import { useContatos } from "@/contexts/contatos-context"
 import { columns } from "./columns"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ContatosActions } from "./contatos-actions"
-import { DataTable } from "./data-table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Contato } from "@/app/contatos/components/types"
 

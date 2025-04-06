@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useContatos } from "@/contexts/contatos-context"
-import { Contato, Tag } from "../types"
+import { Contato } from "../types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
@@ -18,13 +18,8 @@ import {
   Building, 
   Briefcase, 
   Tag as LucideTag,
-  Edit,
-  Trash2,
-  User
+  Edit
 } from "lucide-react"
-import { mapCategoryToPt } from "../../utils/contato-helpers"
-import { ContatoCategoriaIcon } from "../ContatoCategoriaIcon"
-import { ContatoTagsButton } from "./contato-tags-button"
 import { toast } from "sonner"
 import { ContatoDialog } from "./contato-dialog"
 
@@ -33,6 +28,17 @@ interface ContatoDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
+
+const mapCategoryToPt = (category: 'personal' | 'work' | 'family' | 'other'): "pessoal" | "trabalho" | "familia" | "outro" => {
+  const mapping = {
+    personal: "pessoal",
+    work: "trabalho",
+    family: "familia",
+    other: "outro"
+  } as const;
+  
+  return mapping[category];
+};
 
 export function ContatoDetailDialog({ 
   contatoId, 

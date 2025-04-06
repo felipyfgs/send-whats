@@ -1,7 +1,6 @@
-import { User, Briefcase, Users, HeartHandshake } from "lucide-react"
+import { User, Briefcase, Users, HeartHandshake, LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ContatoCategory } from "../components/types"
-import { LucideIcon } from "lucide-react"
 import React from "react"
 
 // Mapeamento de categorias (inglês para português)
@@ -51,4 +50,28 @@ export const categoryIcons: Record<ContatoCategoriaPt, CategoryIconType> = {
     icon: HeartHandshake,
     color: "text-orange-500",
   },
-}; 
+};
+
+// Componente unificado para ícones de categoria
+interface ContatoCategoriaIconProps {
+  categoria: ContatoCategoriaPt;
+  className?: string;
+}
+
+export function ContatoCategoriaIcon({ 
+  categoria, 
+  className 
+}: ContatoCategoriaIconProps) {
+  switch (categoria) {
+    case "pessoal":
+      return <User className={cn(className)} />;
+    case "trabalho":
+      return <Briefcase className={cn(className)} />;
+    case "familia":
+      return <Users className={cn(className)} />;
+    case "outro":
+      return <HeartHandshake className={cn(className)} />;
+    default:
+      return <User className={cn(className)} />;
+  }
+} 

@@ -21,7 +21,7 @@ import { TagsSelector } from "@/components/custom/TagsSelector"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { ColorPicker } from "./color-picker"
+import { ColorPicker } from "./tag-components"
 
 // Interfaces
 interface TagsManagerProps {
@@ -93,108 +93,6 @@ function TagsManager({ contatoIds, onClose, resetStateRef }: TagsManagerProps) {
   useEffect(() => {
     console.log("TagsManager renderizado, showTagForm:", showTagForm);
   }, [showTagForm]);
-  
-  // Componente inline para o formulário de tag
-  const TagFormInline = () => {
-    const [name, setName] = useState("")
-    const [color, setColor] = useState("#3b82f6")
-    
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      
-      if (!name.trim()) {
-        toast.error("O nome da tag não pode estar vazio");
-        return;
-      }
-      
-      if (editingTag) {
-        // Atualizar tag existente
-        updateTag({
-          ...editingTag,
-          name: name.trim(),
-          color
-        }).then(() => {
-          toast.success("Tag atualizada com sucesso");
-          setShowTagForm(false);
-          setEditingTag(null);
-        }).catch(error => {
-          console.error("Erro ao atualizar tag:", error);
-          toast.error("Não foi possível atualizar a tag");
-        });
-      } else {
-        // Criar nova tag
-        createTag({
-          name: name.trim(),
-          color
-        }).then(() => {
-          toast.success("Tag criada com sucesso");
-          setShowTagForm(false);
-        }).catch(error => {
-          console.error("Erro ao criar tag:", error);
-          toast.error("Não foi possível criar a tag");
-        });
-      }
-    }
-    
-    // Preencher campos se estiver editando
-    useEffect(() => {
-      if (editingTag) {
-        setName(editingTag.name);
-        setColor(editingTag.color);
-      }
-    }, [editingTag]);
-    
-    return (
-      <div className="bg-muted/30 p-4 rounded-lg mt-4">
-        <div className="flex justify-between items-center mb-3">
-          <h4 className="text-sm font-medium">
-            {editingTag ? "Editar Tag" : "Nova Tag"}
-          </h4>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0"
-            onClick={() => setShowTagForm(false)}
-          >
-            &times;
-          </Button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="tag-name">Nome da Tag</Label>
-            <Input
-              id="tag-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Digite o nome da tag"
-              className="h-8"
-              autoFocus
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Cor</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button 
-              type="button" 
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTagForm(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" size="sm">
-              {editingTag ? "Atualizar" : "Salvar"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    );
-  };
   
   // Gerenciamento de contatos
   const gerenciandoContatos = useMemo(() => {
@@ -451,6 +349,22 @@ function TagsManager({ contatoIds, onClose, resetStateRef }: TagsManagerProps) {
     }
   }, [selectedTagIds, deleteTag]);
   
+  // Substituir o TagFormInline por uma chamada para TagFormDialog
+  const renderTagFormDialog = () => {
+    if (!showTagForm) return null;
+    
+    return (
+      <TagFormDialog
+        tag={editingTag}
+        onSave={handleSaveTag}
+        defaultOpen={true}
+        onOpenChange={(open) => {
+          if (!open) setShowTagForm(false);
+        }}
+      />
+    );
+  };
+  
   // Renderiza um chip para cada tag disponível
   const renderTagChips = useCallback(() => {
     if (!tags || !Array.isArray(tags) || tags.length === 0) return null;
@@ -634,7 +548,7 @@ function TagsManager({ contatoIds, onClose, resetStateRef }: TagsManagerProps) {
       )}
       
       {/* Dialog de criação/edição de tag */}
-      {showTagForm && <TagFormInline />}
+      {renderTagFormDialog()}
     </div>
   );
 }

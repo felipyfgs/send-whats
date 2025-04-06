@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { Contato, Tag, ContatoCategory } from "../types"
 import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
-import { TagCompactList } from "../tags/tag-compact-list"
+import { TagCompactList } from "../tags/tag-components"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -214,9 +214,9 @@ export const ContatoForm = React.memo(function ContatoForm({
                 <FormControl>
                   <div className="relative">
                     <ContatoCategoriaIcon 
-                      categoria={field.value === 'personal' ? 'Pessoal' : 
-                        field.value === 'work' ? 'Trabalho' : 
-                        field.value === 'family' ? 'Família' : 'Outro'} 
+                      categoria={field.value === 'personal' ? 'pessoal' : 
+                        field.value === 'work' ? 'trabalho' : 
+                        field.value === 'family' ? 'familia' : 'outro'} 
                       className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" 
                     />
                     <Select
@@ -230,7 +230,14 @@ export const ContatoForm = React.memo(function ContatoForm({
                         {categorias.map(categoria => (
                           <SelectItem key={categoria.value} value={categoria.value}>
                             <div className="flex items-center gap-2">
-                              <ContatoCategoriaIcon categoria={categoria.label} className="h-4 w-4" />
+                              <ContatoCategoriaIcon 
+                                categoria={
+                                  categoria.value === 'personal' ? 'pessoal' : 
+                                  categoria.value === 'work' ? 'trabalho' : 
+                                  categoria.value === 'family' ? 'familia' : 'outro'
+                                } 
+                                className="h-4 w-4" 
+                              />
                               <span>{categoria.label}</span>
                             </div>
                           </SelectItem>
