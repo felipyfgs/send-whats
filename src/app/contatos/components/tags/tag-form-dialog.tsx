@@ -8,10 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ColorPicker } from "../ui/color-picker"
+import { ColorPicker } from "./color-picker"
 import { Tag } from "../types"
 
 interface TagFormDialogProps {
@@ -20,14 +21,27 @@ interface TagFormDialogProps {
   tag?: Tag | null
   triggerButton?: React.ReactNode
   onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
 }
 
-export function TagFormDialog({ onSave, children, tag = null, triggerButton, onOpenChange }: TagFormDialogProps) {
-  const [open, setOpen] = useState(false)
+export function TagFormDialog({ 
+  onSave, 
+  children, 
+  tag = null, 
+  triggerButton, 
+  onOpenChange, 
+  defaultOpen = true 
+}: TagFormDialogProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [name, setName] = useState("")
   const [color, setColor] = useState("#3b82f6")
   
-  // Preencher os campos se estiver editando uma tag existente
+  // Atualizar estado open quando defaultOpen mudar
+  useEffect(() => {
+    setOpen(defaultOpen);
+  }, [defaultOpen]);
+  
+  // Preencher os campos se estiver editando uma tag existente - apenas uma vez
   useEffect(() => {
     if (tag) {
       setName(tag.name)
@@ -35,10 +49,24 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton, onO
     }
   }, [tag])
 
+  // Notificar o componente pai sobre mudanças no estado
+  useEffect(() => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    }
+  }, [open, onOpenChange]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    if (!name.trim()) {
+      return; // Evitar envio de tags com nome vazio
+    }
+    
     onSave({ name, color })
     setOpen(false)
+    
     // Resetar os campos apenas se não estiver editando
     if (!tag) {
       setName("")
@@ -47,26 +75,31 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton, onO
   }
 
   const handleOpenChange = (newOpen: boolean) => {
+    console.log("Dialog open state changed:", newOpen); // Log para depuração
     setOpen(newOpen);
-    onOpenChange?.(newOpen);
   }
 
-  // Se não tiver children nem triggerButton, usar botão padrão
-  const defaultTrigger = (
-    <Button size="sm">Nova Tag</Button>
-  )
-
-  // Definir trigger para dialogo corretamente
-  const trigger = triggerButton || children || defaultTrigger
+  // Se não tiver children nem triggerButton, não precisamos de trigger
+  const hasTrigger = !!triggerButton || !!children;
+  const defaultTrigger = <span className="hidden"></span>;
+  const trigger = triggerButton || children || defaultTrigger;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
-      <DialogContent>
+      {hasTrigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>{tag ? "Editar Tag" : "Criar Nova Tag"}</DialogTitle>
+          <DialogDescription>
+            {tag 
+              ? "Modifique o nome e a cor da tag existente" 
+              : "Adicione uma nova tag com nome e cor personalizada"
+            }
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,6 +110,7 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton, onO
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              autoFocus
             />
           </div>
           
@@ -89,7 +123,10 @@ export function TagFormDialog({ onSave, children, tag = null, triggerButton, onO
             <Button 
               type="button" 
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+              }}
             >
               Cancelar
             </Button>
