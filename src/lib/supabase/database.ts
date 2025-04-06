@@ -46,23 +46,32 @@ export async function fetchTags(): Promise<Tag[]> {
 }
 
 export async function createTag(tag: Omit<Tag, "id">): Promise<Tag> {
+  console.log("Iniciando criação de tag:", tag);
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("tags")
-    .insert({ name: tag.name, color: tag.color })
-    .select()
-    .single();
   
-  if (error) {
-    console.error("Erro ao criar tag:", error);
+  try {
+    const { data, error } = await supabase
+      .from("tags")
+      .insert({ name: tag.name, color: tag.color })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Erro do Supabase ao criar tag:", error);
+      throw error;
+    }
+    
+    console.log("Tag criada com sucesso:", data);
+    
+    return {
+      id: data.id,
+      name: data.name,
+      color: data.color
+    };
+  } catch (error) {
+    console.error("Exceção ao criar tag:", error);
     throw error;
   }
-  
-  return {
-    id: data.id,
-    name: data.name,
-    color: data.color
-  };
 }
 
 export async function updateTag(tag: Tag): Promise<Tag> {
@@ -431,6 +440,119 @@ export async function deleteContatos(ids: string[]): Promise<void> {
   
   if (error) {
     console.error("Erro ao excluir contatos em massa:", error);
+    throw error;
+  }
+}
+
+// Função para buscar contatos por termo de busca (incluindo tags)
+export async function searchContatos(searchTerm: string): Promise<Contato[]> {
+  // Se não houver termo de busca, retornar todos os contatos
+  if (!searchTerm || searchTerm.trim() === "") {
+    return fetchContatos();
+  }
+
+  const supabase = createClient();
+  const searchTerms = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+  
+  // Se não houver termos válidos após o split, retornar todos os contatos
+  if (searchTerms.length === 0) {
+    return fetchContatos();
+  }
+
+  // Função auxiliar para verificar se um contato corresponde aos termos de busca
+  const matchesSearchTerms = (contato: Contato, tags: Tag[]): boolean => {
+    return searchTerms.every(term => {
+      // Verificar correspondência nos campos básicos do contato
+      const matchesBasicFields = 
+        (contato.name && contato.name.toLowerCase().includes(term)) ||
+        (contato.email && contato.email.toLowerCase().includes(term)) ||
+        (contato.phone && contato.phone.toLowerCase().includes(term)) ||
+        (contato.category && contato.category.toLowerCase().includes(term)) ||
+        (contato.company && contato.company.toLowerCase().includes(term)) ||
+        (contato.role && contato.role.toLowerCase().includes(term)) ||
+        (contato.notes && contato.notes.toLowerCase().includes(term));
+      
+      // Verificar correspondência nas tags
+      const matchesTags = tags.some(tag => 
+        tag.name.toLowerCase().includes(term) || 
+        (tag.description && tag.description.toLowerCase().includes(term))
+      );
+      
+      return matchesBasicFields || matchesTags;
+    });
+  };
+
+  try {
+    // Buscar todos os contatos
+    const { data: contatos, error: contatosError } = await supabase
+      .from("contatos")
+      .select("*");
+    
+    if (contatosError) {
+      console.error("Erro ao buscar contatos:", contatosError);
+      throw contatosError;
+    }
+    
+    // Buscar todas as tags
+    const { data: tags, error: tagsError } = await supabase
+      .from("tags")
+      .select("*");
+    
+    if (tagsError) {
+      console.error("Erro ao buscar tags:", tagsError);
+      throw tagsError;
+    }
+    
+    // Buscar as relações entre contatos e tags
+    const { data: relacoes, error: relError } = await supabase
+      .from("contato_tags")
+      .select("*");
+    
+    if (relError) {
+      console.error("Erro ao buscar relações contato-tag:", relError);
+      throw relError;
+    }
+    
+    // Criar um mapa de contatos para tags
+    const contatoTagsMap: Record<string, Tag[]> = {};
+    
+    relacoes.forEach((rel: DBContatoTag) => {
+      if (!contatoTagsMap[rel.contato_id]) {
+        contatoTagsMap[rel.contato_id] = [];
+      }
+      
+      const tag = tags.find((t: DBTag) => t.id === rel.tag_id);
+      if (tag) {
+        contatoTagsMap[rel.contato_id].push({
+          id: tag.id,
+          name: tag.name,
+          color: tag.color
+        });
+      }
+    });
+    
+    // Filtrar e mapear contatos
+    const result = contatos
+      .map((contato: DBContato): Contato => {
+        const contatoTags = contatoTagsMap[contato.id] || [];
+        
+        return {
+          id: contato.id,
+          name: contato.name,
+          email: contato.email,
+          phone: contato.phone,
+          category: contato.category as "personal" | "work" | "family" | "other",
+          tags: contatoTags,
+          company: contato.company,
+          role: contato.role,
+          notes: contato.notes
+        };
+      })
+      .filter((contato: Contato) => matchesSearchTerms(contato, contatoTagsMap[contato.id] || []));
+    
+    return result;
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
     throw error;
   }
 } 

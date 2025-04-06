@@ -35,6 +35,8 @@ interface ContatosContextType {
   // Funções de tags em massa
   addTagsToSelectedContatos: (tagIds: string[]) => Promise<void>;
   removeTagsFromSelectedContatos: (tagIds: string[]) => Promise<void>;
+  addTagsToContatos: (contatoIds: string[], tagIds: string[]) => Promise<void>;
+  removeTagsFromContatos: (contatoIds: string[], tagIds: string[]) => Promise<void>;
   
   // Função de recarregamento
   refreshData: () => Promise<void>;
@@ -235,6 +237,84 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Adicionar as novas funções
+  const addTagsToContatos = async (contatoIds: string[], tagIds: string[]) => {
+    try {
+      if (contatoIds.length === 0 || tagIds.length === 0) return;
+      
+      setLoading(true);
+      
+      const promises = contatoIds.map(async (contatoId) => {
+        const contato = contatos.find(c => c.id === contatoId);
+        if (!contato) return;
+        
+        // Pegar as tags que já existem no contato para evitar duplicação
+        const existingTagIds = contato.tags.map(tag => tag.id);
+        
+        // Filtrar apenas as tags que ainda não estão no contato
+        const newTagIds = tagIds.filter(id => !existingTagIds.includes(id));
+        
+        if (newTagIds.length === 0) return;
+        
+        // Buscar as novas tags completas
+        const newTags = tags.filter(tag => newTagIds.includes(tag.id));
+        
+        // Adicionar as novas tags
+        const updatedContato = {
+          ...contato,
+          tags: [...contato.tags, ...newTags],
+        };
+        
+        await db.updateContato(updatedContato);
+      });
+      
+      await Promise.all(promises);
+      await refreshData();
+    } catch (error) {
+      console.error("Erro ao adicionar tags:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar as tags aos contatos.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeTagsFromContatos = async (contatoIds: string[], tagIds: string[]) => {
+    try {
+      if (contatoIds.length === 0 || tagIds.length === 0) return;
+      
+      setLoading(true);
+      
+      const promises = contatoIds.map(async (contatoId) => {
+        const contato = contatos.find(c => c.id === contatoId);
+        if (!contato) return;
+        
+        // Remover as tags selecionadas
+        const updatedContato = {
+          ...contato,
+          tags: contato.tags.filter(tag => !tagIds.includes(tag.id)),
+        };
+        
+        await db.updateContato(updatedContato);
+      });
+      
+      await Promise.all(promises);
+      await refreshData();
+    } catch (error) {
+      console.error("Erro ao remover tags:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover as tags dos contatos.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     contatos,
     tags,
@@ -260,6 +340,8 @@ export function ContatosProvider({ children }: { children: React.ReactNode }) {
     
     addTagsToSelectedContatos,
     removeTagsFromSelectedContatos,
+    addTagsToContatos,
+    removeTagsFromContatos,
     
     refreshData
   };
