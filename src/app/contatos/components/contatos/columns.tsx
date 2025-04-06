@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -18,7 +17,6 @@ import { useContatos } from "@/contexts/contatos-context"
 import { toast } from "sonner"
 import { ContatoDetailDialog } from "./contato-detail-dialog"
 import { Contato, Tag } from "../types"
-import { categoryLabels } from "../../utils/contato-helpers"
 
 // Componente para as células com ações do contato
 function ActionsCell({ contato }: { contato: Contato }) {

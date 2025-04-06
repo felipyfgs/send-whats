@@ -50,7 +50,7 @@ export function LoginForm({
         return
       }
       
-      router.push("/dashboard")
+      router.push("/campanhas")
     } catch (error: any) {
       setError(error.message || "Ocorreu um erro durante o login.")
     } finally {

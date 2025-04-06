@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import ContatosTable from "./components/contatos/contatos-table"
 import { ContatosProvider } from "@/contexts/contatos-context"
-import { ContatoDialog } from "./components/contatos/contato-dialog"
 import {
   SidebarInset,
   SidebarProvider,
@@ -43,7 +42,7 @@ export default function ContatosPage() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/">Início</BreadcrumbLink>
+                    <BreadcrumbLink href="/contatos">Início</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>

@@ -45,7 +45,7 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutDashboard,
-      isActive: true,
+      isActive: false,
     },
     {
       title: "Contatos",
@@ -57,7 +57,7 @@ const data = {
       title: "Campanhas",
       url: "/campanhas",
       icon: BookMarked,
-      isActive: false,
+      isActive: true,
     },
     {
       title: "Configurações",
