@@ -1,50 +1,36 @@
-# To-Do App
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Aplicação de gerenciamento de tarefas desenvolvida com Next.js, Tailwind CSS e shadcn/ui.
+## Getting Started
 
-## Características
-
-- Interface moderna e responsiva com shadcn/ui + Tailwind CSS
-- Framework Next.js para renderização eficiente e roteamento
-- Componentes reutilizáveis seguindo as melhores práticas
-- Gerenciamento de tarefas com funcionalidades CRUD
-
-## Estrutura do Projeto
-
-- `src/app`: Páginas e rotas da aplicação
-- `src/app/*/components`: Componentes específicos das páginas
-- `src/components/ui`: Componentes de UI do shadcn
-- `src/components/custom`: Componentes customizados da aplicação
-- `src/lib`: Utilitários, hooks e funções helpers
-
-## Como executar o projeto
+First, run the development server:
 
 ```bash
-# Instalar dependências
-npm install
-
-# Executar em modo de desenvolvimento
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) no seu navegador para ver a aplicação.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Tecnologias
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-- [Next.js](https://nextjs.org/) - Framework React para produção
-- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS utilitário
-- [shadcn/ui](https://ui.shadcn.com/) - Componentes de UI reutilizáveis
-- [TypeScript](https://www.typescriptlang.org/) - Superset tipado de JavaScript
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Desenvolvimento
+## Learn More
 
-Para adicionar novos componentes do shadcn/ui:
+To learn more about Next.js, take a look at the following resources:
 
-```bash
-# Exemplo: adicionar componente de botão
-npx shadcn-ui@latest add button
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Deploy
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Para fazer deploy da aplicação, recomendamos a [Vercel](https://vercel.com), plataforma dos criadores do Next.js.
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
